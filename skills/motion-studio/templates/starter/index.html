@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="{{LANG}}" data-format="{{FORMAT}}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width={{WIDTH}}, height={{HEIGHT}}" />
+    <!-- motion-studio starter. Libraries are vendored via npm (no CDN at render time). -->
+    <script src="node_modules/gsap/dist/gsap.min.js"></script>
+    <style>
+      /* Load licensed fonts from assets/fonts (never from a CDN at render time), e.g.:
+      @font-face { font-family: "Display"; src: url("assets/fonts/YourDisplay-Bold.woff2") format("woff2"); font-weight: 700; }
+      @font-face { font-family: "Body"; src: url("assets/fonts/YourBody-Regular.woff2") format("woff2"); font-weight: 400; }
+      */
+
+      /* Design tokens: fill from style.md (preset + brand). */
+      :root {
+        --bg: #0e1117;
+        --ink: #f5f7fa;
+        --muted: #9aa4b2;
+        --accent: #3b82f6;
+        /* After adding @font-face rules above, put those family names first. */
+        --font-display: "Inter", system-ui, sans-serif;
+        --font-body: "Inter", system-ui, sans-serif;
+        --w: {{WIDTH}}px;
+        --h: {{HEIGHT}}px;
+        /* Safe zone for this format (see references/typography-i18n.md). */
+        --safe-left: {{SAFE_LEFT}};
+        --safe-right: {{SAFE_RIGHT}};
+        --safe-top: {{SAFE_TOP}};
+        --safe-bottom: {{SAFE_BOTTOM}};
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: var(--w); height: var(--h); overflow: hidden; background: var(--bg); }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; color: var(--ink); font-family: var(--font-body); }
+      .scene { position: absolute; inset: 0; visibility: hidden; }
+      /* Content box = the safe zone. Put all key text and CTAs inside .safe. */
+      .safe {
+        position: absolute;
+        left: var(--safe-left); right: var(--safe-right);
+        top: var(--safe-top); bottom: var(--safe-bottom);
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        text-align: center; gap: 0.4em;
+      }
+      .headline { font-family: var(--font-display); font-weight: 700; font-size: {{HEADLINE_PX}}px; line-height: 1.05; letter-spacing: -0.01em; }
+      .support { font-size: {{BODY_PX}}px; color: var(--muted); line-height: 1.35; }
+      .accent { color: var(--accent); }
+      .word { display: inline-block; }
+      .cta-pill {
+        display: inline-block; padding: 0.45em 1.1em; border-radius: 999px;
+        background: var(--accent); color: #fff; font-weight: 700; font-size: {{BODY_PX}}px;
+      }
+      /* Safe-zone guides for style-frame checks only. Add class "show-guides" to <html> temporarily. Never render finals with it. */
+      #guides { display: none; position: absolute; left: var(--safe-left); right: var(--safe-right); top: var(--safe-top); bottom: var(--safe-bottom); outline: 3px dashed rgba(255, 0, 80, 0.8); pointer-events: none; }
+      html.show-guides #guides { display: block; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="{{DURATION}}" data-width="{{WIDTH}}" data-height="{{HEIGHT}}">
+      <!-- S1 hook (kinetic-title) -->
+      <section id="s1" class="scene">
+        <div class="safe">
+          <h1 class="headline"><span class="word">Your</span> <span class="word">bold</span> <span class="word accent">hook</span></h1>
+        </div>
+      </section>
+      <!-- S2 middle beat -->
+      <section id="s2" class="scene">
+        <div class="safe">
+          <h2 class="headline">One clear idea</h2>
+          <p class="support">A short supporting line</p>
+        </div>
+      </section>
+      <!-- S3 CTA (cta-end-card) -->
+      <section id="s3" class="scene">
+        <div class="safe">
+          <h2 class="headline">Brand</h2>
+          <span class="cta-pill">Call to action</span>
+          <p class="support">example.com</p>
+        </div>
+      </section>
+      <div id="guides"></div>
+    </div>
+    <script>
+      // One paused master timeline. Every tween is placed at an absolute time (seconds).
+      // Seek-safe rules: no Date.now(), no requestAnimationFrame loops, no unseeded Math.random().
+      const tl = gsap.timeline({ paused: true });
+
+      // Scene visibility: each scene is shown/hidden at absolute times (seek-safe).
+      tl.set("#s1", { autoAlpha: 1 }, 0).set("#s1", { autoAlpha: 0 }, 3);
+      tl.set("#s2", { autoAlpha: 1 }, 3).set("#s2", { autoAlpha: 0 }, {{CTA_START}});
+      tl.set("#s3", { autoAlpha: 1 }, {{CTA_START}});
+
+      // S1: the hook is already readable at frame 0 (frame 0 is the social thumbnail),
+      // then settles and the accent word pops.
+      tl.fromTo("#s1 .word", { y: 18, scale: 1.04 }, { y: 0, scale: 1, duration: 0.6, ease: "expo.out", stagger: 0.08 }, 0);
+      tl.fromTo("#s1 .accent", { color: "var(--ink)" }, { color: "var(--accent)", duration: 0.25 }, 0.6);
+      tl.to("#s1 .safe", { opacity: 0, y: -40, duration: 0.3, ease: "power2.in" }, 2.7);
+
+      // S2: headline + support
+      tl.from("#s2 .headline", { y: 40, opacity: 0, duration: 0.5, ease: "power3.out" }, 3.1);
+      tl.from("#s2 .support", { y: 24, opacity: 0, duration: 0.5, ease: "power3.out" }, 3.3);
+      tl.to("#s2 .safe", { opacity: 0, duration: 0.3, ease: "power2.in" }, {{CTA_START}} - 0.3);
+
+      // S3: CTA
+      tl.from("#s3 .headline", { scale: 0.9, opacity: 0, duration: 0.5, ease: "back.out(1.4)" }, {{CTA_START}} + 0.1);
+      tl.from("#s3 .cta-pill", { y: 30, opacity: 0, duration: 0.45, ease: "power3.out" }, {{CTA_START}} + 0.45);
+      tl.from("#s3 .support", { opacity: 0, duration: 0.4 }, {{CTA_START}} + 0.7);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

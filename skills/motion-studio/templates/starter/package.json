@@ -1,0 +1,14 @@
+{
+  "name": "{{PROJECT}}",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx --yes hyperframes@{{HF_VERSION}} preview",
+    "check": "npx --yes hyperframes@{{HF_VERSION}} check",
+    "render": "npx --yes hyperframes@{{HF_VERSION}} render"
+  },
+  "dependencies": {
+    "gsap": "3.15.0",
+    "three": "0.184.0"
+  }
+}

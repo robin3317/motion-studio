@@ -1,0 +1,44 @@
+name: Beta feedback
+description: Tell us how motion-studio worked for you
+title: "[feedback] "
+labels: ["feedback"]
+body:
+  - type: dropdown
+    id: host
+    attributes:
+      label: Where did you run it?
+      options: ["Claude Code", "Claude desktop (Cowork)", "Other"]
+    validations: { required: true }
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: ["Windows", "macOS", "Linux"]
+    validations: { required: true }
+  - type: dropdown
+    id: playbook
+    attributes:
+      label: What did you make?
+      options: ["Company promo", "Product promo", "Release promo", "Brand promo", "Footage edit", "Something else"]
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      options: ["Autopilot", "Step-by-step"]
+  - type: textarea
+    id: prompt
+    attributes:
+      label: Your request (prompt)
+  - type: dropdown
+    id: quality
+    attributes:
+      label: How good was the final video?
+      options: ["1 - unusable", "2 - weak", "3 - okay", "4 - good", "5 - would publish it"]
+  - type: textarea
+    id: issues
+    attributes:
+      label: What went wrong or felt off? (setup, errors, visuals, audio, timing)
+  - type: textarea
+    id: wish
+    attributes:
+      label: What would make it great?

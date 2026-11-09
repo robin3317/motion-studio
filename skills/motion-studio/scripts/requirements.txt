@@ -1,0 +1,4 @@
+# motion-studio helper scripts. Core needs only numpy (plus FFmpeg on PATH).
+numpy>=1.24
+# Optional, installed only when needed (ask the user first):
+#   rembg      -> scripts/cutout.py (product background removal; downloads a ~170 MB model on first run)

@@ -1,0 +1,12 @@
+{
+  "name": "codeonces",
+  "description": "Skills and plugins by Robin Rahman (Codeonces)",
+  "owner": { "name": "Robin Rahman (Codeonces)", "url": "https://robinrahman.me" },
+  "plugins": [
+    {
+      "name": "motion-studio",
+      "source": "./",
+      "description": "Motion-graphics promo videos and footage edits with HyperFrames: 3D, music, SFX, Autopilot or step-by-step."
+    }
+  ]
+}

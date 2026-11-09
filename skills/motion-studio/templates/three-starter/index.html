@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="{{LANG}}" data-format="{{FORMAT}}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width={{WIDTH}}, height={{HEIGHT}}" />
+    <!-- motion-studio 3D starter: seek-safe Three.js logo reveal. See references/three-d.md. -->
+    <script src="node_modules/gsap/dist/gsap.min.js"></script>
+    <script type="importmap">
+      { "imports": {
+          "three": "./node_modules/three/build/three.module.js",
+          "three/addons/": "./node_modules/three/examples/jsm/"
+      } }
+    </script>
+    <style>
+      :root { --bg: #07080c; --ink: #f5f7fa; --accent: #3b82f6; --font-body: "Inter", system-ui, sans-serif; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: {{WIDTH}}px; height: {{HEIGHT}}px; overflow: hidden; background: var(--bg); }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; }
+      #gl { position: absolute; inset: 0; width: 100%; height: 100%; }
+      /* Text stays in HTML so any language/script shapes correctly. */
+      #tagline {
+        position: absolute; left: {{SAFE_LEFT}}; right: {{SAFE_RIGHT}}; bottom: calc({{SAFE_BOTTOM}} + 4%);
+        text-align: center; color: var(--ink); font: 600 {{BODY_PX}}px/1.3 var(--font-body); opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="{{DURATION}}" data-width="{{WIDTH}}" data-height="{{HEIGHT}}">
+      <canvas id="gl" class="clip" data-start="0" data-duration="{{DURATION}}" data-track-index="0"></canvas>
+      <div id="tagline" class="clip" data-start="0" data-duration="{{DURATION}}" data-track-index="1">Your tagline here</div>
+    </div>
+
+    <script>
+      // Host: one linear GSAP clock drives render(t). Frames may be requested in any order,
+      // so the 3D state must be a pure function of t.
+      (function () {
+        const root = document.getElementById("root");
+        const duration = parseFloat(root.dataset.duration) || 4;
+        const host = { t: 0, duration: duration, render: null };
+        window.__ms3d = host;
+        window.__hf = window.__hf || {};
+        window.__hf.buildReady = window.__hf.buildReady || {};
+        window.__hf.buildReady["main"] = new Promise((resolve) => { host.ready = resolve; });
+
+        const tl = gsap.timeline({ paused: true });
+        tl.to(host, { t: duration, duration: duration, ease: "none",
+          onUpdate: () => { if (host.render) host.render(host.t); } }, 0);
+        tl.fromTo("#tagline", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, Math.min(2.2, duration * 0.55));
+        window.__timelines = window.__timelines || {};
+        window.__timelines["main"] = tl;
+      })();
+    </script>
+
+    <script type="module">
+      import * as THREE from "three";
+      import { SVGLoader } from "three/addons/loaders/SVGLoader.js";
+      import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+
+      const host = window.__ms3d;
+      const W = {{WIDTH}}, H = {{HEIGHT}};
+      const css = getComputedStyle(document.documentElement);
+      const accent = new THREE.Color(css.getPropertyValue("--accent").trim() || "#3b82f6");
+
+      const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById("gl"), antialias: true, alpha: false, preserveDrawingBuffer: true });
+      renderer.setPixelRatio(1);
+      renderer.setSize(W, H, false);
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.0;
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(css.getPropertyValue("--bg").trim() || "#07080c");
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+      const camera = new THREE.PerspectiveCamera(W > H ? 32 : 45, W / H, 0.1, 100);
+
+      const key = new THREE.DirectionalLight(0xffffff, 1.1); key.position.set(3, 4, 5); scene.add(key);
+      const rim = new THREE.DirectionalLight(accent, 2.2); rim.position.set(-4, 1, -3); scene.add(rim);
+
+      // Seeded RNG (mulberry32): deterministic "random" values, generated once.
+      function rng(seed) { return function () { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+      const rand = rng(7);
+
+      // Dust particles from the seeded field.
+      const N = 300, pos = new Float32Array(N * 3), base = [];
+      for (let i = 0; i < N; i++) { base.push([(rand() - 0.5) * 12, (rand() - 0.5) * 8, (rand() - 0.5) * 6 - 2, rand() * Math.PI * 2]); }
+      const dustGeo = new THREE.BufferGeometry(); dustGeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.02, transparent: true, opacity: 0.35 }));
+      scene.add(dust);
+
+      const clamp01 = (x) => Math.min(1, Math.max(0, x));
+      const easeInOutCubic = (x) => { x = clamp01(x); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+      const easeOutExpo = (x) => { x = clamp01(x); return x === 1 ? 1 : 1 - Math.pow(2, -10 * x); };
+
+      const logo = new THREE.Group(); scene.add(logo);
+
+      new SVGLoader().load("assets/logo.svg", (data) => {
+        // Each SVG path keeps its own fill colour (multi-colour logos); paths without a fill use --accent.
+        // Later paths sit slightly in front so overlapping layers don't z-fight.
+        data.paths.forEach((p, i) => {
+          const fill = p.userData && p.userData.style && p.userData.style.fill;
+          const color = fill && fill !== "none" ? new THREE.Color().setStyle(fill) : accent;
+          const mat = new THREE.MeshStandardMaterial({ color, metalness: 0.55, roughness: 0.32 });
+          SVGLoader.createShapes(p).forEach((shape) => {
+            const geo = new THREE.ExtrudeGeometry(shape, { depth: 24, bevelEnabled: true, bevelThickness: 4, bevelSize: 3, bevelSegments: 4, curveSegments: 24 });
+            geo.translate(0, 0, i * 6);
+            logo.add(new THREE.Mesh(geo, mat));
+          });
+        });
+        // Center and normalize: SVG y axis points down.
+        const box = new THREE.Box3().setFromObject(logo);
+        const size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());
+        logo.children.forEach((m) => m.geometry.translate(-center.x, -center.y, -center.z));
+        const s = 2.2 / Math.max(size.x, size.y);
+        logo.scale.set(s, -s, s);
+
+        host.render = (t) => {
+          const D = host.duration;
+          // Camera arc 35° → 0°, slight dolly-in.
+          const u = easeInOutCubic(t / (D * 0.7));
+          const ang = THREE.MathUtils.degToRad(35 * (1 - u));
+          const dist = (W > H ? 6.2 : 7.8) - 0.8 * u;
+          camera.position.set(Math.sin(ang) * dist, 0.6 * (1 - u) + 0.15, Math.cos(ang) * dist);
+          camera.lookAt(0, 0.1, 0);
+          // Logo rises in and settles.
+          const r = easeOutExpo(t / 1.2);
+          logo.position.y = -1.2 * (1 - r) + 0.25;
+          logo.rotation.y = (1 - r) * -0.6;
+          // Rim light sweep.
+          rim.position.x = -4 + 8 * easeInOutCubic((t - 0.8) / 1.4);
+          // Dust drifts analytically from t.
+          for (let i = 0; i < N; i++) {
+            const b = base[i];
+            pos[i * 3] = b[0] + Math.sin(t * 0.3 + b[3]) * 0.2;
+            pos[i * 3 + 1] = b[1] + t * 0.08;
+            pos[i * 3 + 2] = b[2];
+          }
+          dustGeo.attributes.position.needsUpdate = true;
+          renderer.render(scene, camera);
+        };
+        host.render(host.t);
+        host.ready();
+      });
+    </script>
+  </body>
+</html>

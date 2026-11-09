@@ -1,0 +1,13 @@
+# build / local
+dist/
+node_modules/
+__pycache__/
+*.pyc
+.hyperframes/
+.DS_Store
+Thumbs.db
+.env
+# test renders contain third-party brands: keep local only
+tests/renders/
+# internal snapshot (duplicate of references/)
+docs/_references-bundle.md
