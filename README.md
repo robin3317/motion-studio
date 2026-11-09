@@ -25,6 +25,23 @@
 - **Any language:** script and on-screen text in the language you ask for, with proper fonts (Bangla, Arabic/RTL, Hindi, CJK…).
 - **Real facts only:** no invented stats, clients or prices. AI images only with your consent.
 
+## Styles
+
+Every video starts from a style preset, which the skill adapts to your brand colours and fonts. Step-by-step mode offers 2–3 styles with preview frames. Autopilot picks one from the playbook and your tone, and writes down why. You can also just ask: *"make it in the Tech Neon style"*.
+
+| Style | Feel | Best for |
+|---|---|---|
+| **Corporate Clean** | Clear, trustworthy, calm | Company promos, B2B, finance, services |
+| **Bold Kinetic** | Loud, fast, typographic | Social ads, events, courses, brand manifestos |
+| **Cinematic 3D** | Epic, dimensional, premium | Product reveals, movie and game releases, logo reveals |
+| **Minimal Luxury** | Quiet, elegant, spacious | Premium products, fashion, real estate, beauty |
+| **Playful Pop** | Fun, bouncy, colourful | Consumer apps, food, kids/edu, casual brands |
+| **Tech Neon** | Dark, glowing, futuristic | SaaS, AI, dev tools, gaming, fintech |
+| **Editorial** | Magazine, artful, grid-based | Agencies, media, culture, fashion drops, brand stories |
+| **Isometric Kinetic** *(new in next release)* | Smart, crisp, explainer-tech: isometric objects + kinetic headlines | Tech/SaaS promos, digital products, courses, explainers, announcements with facts |
+
+Each style comes with its own typography, motion, transition, music and SFX rules. Every style also follows shared craft rules: one accent word per headline, a visual metaphor per scene, and text synced to the voice or the beat. Scenes are built from **21 shot recipes** (kinetic title, stat counter, 3D logo reveal, product orbit, isometric stack, terminal window, timeline, countdown, captions, end card…). See [`references/styles/`](skills/motion-studio/references/styles/) and [`references/shots/`](skills/motion-studio/references/shots/).
+
 ## Requirements
 
 - **Claude Code** or the **Claude desktop app (Cowork)**. It needs terminal and file access, so rendering doesn't run in plain chat.
