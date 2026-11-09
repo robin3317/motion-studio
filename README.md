@@ -35,7 +35,14 @@ You don't need to check these yourself. The skill runs a read-only check first a
 
 ## Install
 
-**Claude Code (plugin, recommended)**
+**Easiest: let Claude do it (Claude Code)**
+Paste this into Claude Code:
+```
+Install the motion-studio plugin from https://github.com/robin3317/motion-studio, then install the HyperFrames skills it needs.
+```
+Approve the commands when asked, then run `/reload-plugins` (or start a new session).
+
+**Claude Code (plugin, manual)**
 ```
 /plugin marketplace add robin3317/motion-studio
 /plugin install motion-studio@codeonces
