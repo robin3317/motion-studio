@@ -2,7 +2,7 @@
 
 **A Claude skill that directs motion-graphics videos.** Describe what you need ("a 20-second promo for my company", "a launch teaser for my course", "add captions to this clip") and Claude plans, designs, animates, sound-designs and renders an MP4 with [HyperFrames](https://github.com/heygen-com/hyperframes).
 
-> **v0.1.0-beta, early test release.** It works end to end, but the visuals are still basic. Your feedback decides what improves next ([give feedback](#feedback)).
+> **v0.2.0-beta, test release.** New in v0.2: the **Isometric Kinetic** style, its template, and craft rules that make every style less flat ([changelog](CHANGELOG.md)). Your feedback decides what improves next ([give feedback](#feedback)).
 
 ## What it makes
 
@@ -38,7 +38,7 @@ Every video starts from a style preset, which the skill adapts to your brand col
 | **Playful Pop** | Fun, bouncy, colourful | Consumer apps, food, kids/edu, casual brands |
 | **Tech Neon** | Dark, glowing, futuristic | SaaS, AI, dev tools, gaming, fintech |
 | **Editorial** | Magazine, artful, grid-based | Agencies, media, culture, fashion drops, brand stories |
-| **Isometric Kinetic** *(new in next release)* | Smart, crisp, explainer-tech: isometric objects + kinetic headlines | Tech/SaaS promos, digital products, courses, explainers, announcements with facts |
+| **Isometric Kinetic** *(new in v0.2)* | Smart, crisp, explainer-tech: isometric objects + kinetic headlines | Tech/SaaS promos, digital products, courses, explainers, announcements with facts |
 
 Each style comes with its own typography, motion, transition, music and SFX rules. Every style also follows shared craft rules: one accent word per headline, a visual metaphor per scene, and text synced to the voice or the beat. Scenes are built from **21 shot recipes** (kinetic title, stat counter, 3D logo reveal, product orbit, isometric stack, terminal window, timeline, countdown, captions, end card…). See [`references/styles/`](skills/motion-studio/references/styles/) and [`references/shots/`](skills/motion-studio/references/shots/).
 
@@ -71,7 +71,7 @@ npx skills add robin3317/motion-studio
 ```
 
 **Claude desktop / Cowork (ZIP upload)**
-1. Download `motion-studio-skill-v0.1.0-beta.zip` from [Releases](https://github.com/robin3317/motion-studio/releases).
+1. Download `motion-studio-skill-v0.2.0-beta.zip` (the newest version) from [Releases](https://github.com/robin3317/motion-studio/releases).
 2. In Claude, open **Settings → Capabilities → Skills**, click **Upload skill**, and choose the ZIP.
 
 **Manual**
@@ -129,9 +129,10 @@ brief & facts → script & storyboard → style frames → build (HyperFrames + 
 
 This is a beta and feedback shapes v0.2. After you try it, please [open a feedback issue](https://github.com/robin3317/motion-studio/issues/new?template=feedback.yml) (it takes 2 minutes) or message me directly. Most useful: your prompt, OS, what broke, and how the video looked.
 
-## Known limitations (v0.1.0-beta)
+## Known limitations (v0.2.0-beta)
 
-- The visual style is still fairly flat. Stronger typography, animation and 3D craft is the next focus.
+- v0.2 adds Isometric Kinetic and shared craft rules. The older presets still look plainer than it does; continuous-camera "launch film" motion (morphs, motion blur) is planned next.
+- The Isometric Kinetic template is tested with music only. Headlines synced to a voiceover, in 9:16, still need real-world testing.
 - Tested end to end on Linux. Windows and macOS reports are very welcome.
 - Product background removal (`rembg`) is untested.
 

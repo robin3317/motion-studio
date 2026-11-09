@@ -5,7 +5,7 @@ license: MIT
 compatibility: Needs Claude Code or the Claude desktop app (Cowork) with terminal and file access, Node.js 22+, FFmpeg, Python 3.10+ and the official HyperFrames skills.
 metadata:
   author: robin3317
-  version: 0.1.0-beta
+  version: 0.2.0-beta
   repository: https://github.com/robin3317/motion-studio
 ---
 

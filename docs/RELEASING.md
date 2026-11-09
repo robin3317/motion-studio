@@ -21,6 +21,16 @@ Without the GitHub CLI: create the repo on github.com, then run `git remote add 
 3. Commit, tag `vX.Y.Z`, push, then run `gh release create`.
 Plugin users update with `/plugin marketplace update codeonces`.
 
+### Example: v0.2.0-beta
+```powershell
+git add -A
+git commit -m "motion-studio v0.2.0-beta"
+git push origin main
+git tag v0.2.0-beta
+git push origin v0.2.0-beta
+gh release create v0.2.0-beta dist\motion-studio-skill-v0.2.0-beta.zip dist\motion-studio-plugin-v0.2.0-beta.zip --prerelease --title "motion-studio v0.2.0-beta" --notes-file dist\release-notes-v0.2.0-beta.md
+```
+
 ## How users get notified
 `skills/motion-studio/scripts/update_check.py` reads the GitHub **Releases** of robin3317/motion-studio (pre-releases included) and compares the newest tag with the installed `metadata.version` in SKILL.md. So every release needs:
 - a **tag in the form vX.Y.Z[-pre]** that is higher than the last one (e.g. v0.1.0-beta → v0.2.0-beta → v1.0.0)

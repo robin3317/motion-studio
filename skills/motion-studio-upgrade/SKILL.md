@@ -4,7 +4,7 @@ description: Upgrades the motion-studio video skill to its latest release and sh
 license: MIT
 metadata:
   author: robin3317
-  version: 0.1.0-beta
+  version: 0.2.0-beta
 ---
 
 # Upgrade motion-studio
