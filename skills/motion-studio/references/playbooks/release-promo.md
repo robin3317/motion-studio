@@ -7,7 +7,7 @@
 Title, type, date + time + **time zone**, place or platform, price (optional), up to 3 selling points, CTA + URL, poster or key art (if any). See `data-gathering.md` §5.
 
 ## Defaults
-- Style by type: course → **Bold Kinetic** or **Corporate Clean**; movie → **Cinematic 3D**; event → **Bold Kinetic** or **Playful Pop**; app → **Tech Neon**; fashion drop → **Editorial** or **Minimal Luxury**.
+- Style by type: course → **Bold Kinetic**, **Corporate Clean** or **Isometric Kinetic** (tech/dev courses); movie → **Cinematic 3D**; event → **Bold Kinetic** or **Playful Pop**; app → **Tech Neon** or **Isometric Kinetic**; fashion drop → **Editorial** or **Minimal Luxury**.
 - Music: builds tension and releases at the reveal or date. 90–140 BPM depending on energy.
 
 ## Variant structures (15–30 s)

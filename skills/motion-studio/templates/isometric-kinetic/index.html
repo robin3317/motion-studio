@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="{{LANG}}" data-format="{{FORMAT}}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width={{WIDTH}}, height={{HEIGHT}}" />
+    <!-- motion-studio · Isometric Kinetic starter. See references/styles/isometric-kinetic.md and references/craft.md.
+         Edit COPY + BRAND below, keep the rhythm. Libraries + fonts load from node_modules (run npm install once). -->
+    <script src="node_modules/gsap/dist/gsap.min.js"></script>
+    <script src="lib/iso-kit.js"></script>
+    <style>
+      @font-face { font-family: "Outfit"; src: url("node_modules/@fontsource/outfit/files/outfit-latin-400-normal.woff2") format("woff2"); font-weight: 400; }
+      @font-face { font-family: "Outfit"; src: url("node_modules/@fontsource/outfit/files/outfit-latin-700-normal.woff2") format("woff2"); font-weight: 700; }
+      @font-face { font-family: "JBM"; src: url("node_modules/@fontsource/jetbrains-mono/files/jetbrains-mono-latin-500-normal.woff2") format("woff2"); font-weight: 500; }
+      @font-face { font-family: "JBM"; src: url("node_modules/@fontsource/jetbrains-mono/files/jetbrains-mono-latin-700-normal.woff2") format("woff2"); font-weight: 700; }
+      /* For non-Latin text add a @font-face with the SAME family name + unicode-range (references/typography-i18n.md). */
+
+      /* BRAND TOKENS: replace from style.md. dark / paper / solid is the background rhythm. */
+      :root {
+        --dark: #121419; --dark-2: #1c2029; --paper: #f2f0eb; --solid: #5b3df5;
+        --ink-on-dark: #f2f0eb; --ink-on-light: #121419; --ink-on-solid: #ffffff;
+        --accent-on-dark: #a48bff; --accent-on-light: #4b2fe0;
+        --line: #121419; --font-sans: "Outfit", sans-serif; --font-mono: "JBM", monospace;
+        --W: {{WIDTH}}px; --H: {{HEIGHT}}px;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: var(--W); height: var(--H); overflow: hidden; background: var(--dark); }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: var(--font-sans); }
+      .scene { position: absolute; inset: 0; visibility: hidden; overflow: hidden; }
+      .dark { background: var(--dark); color: var(--ink-on-dark); --acc: var(--accent-on-dark); }
+      .paper { background: var(--paper); color: var(--ink-on-light); --acc: var(--accent-on-light); }
+      .solid { background: var(--solid); color: var(--ink-on-solid); --acc: var(--ink-on-solid); }
+      .dark::before { content: ""; position: absolute; inset: 0; background: radial-gradient(70% 60% at 70% 45%, color-mix(in srgb, var(--accent-on-dark) 9%, transparent), transparent 70%); }
+      .stage { position: absolute; inset: 0; }
+      .col { position: absolute; }
+      .eyebrow { font: 500 28px/1 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; opacity: .62; display: flex; align-items: center; gap: 18px; margin-bottom: 30px; }
+      .eyebrow::before { content: ""; width: 48px; height: 2px; background: currentColor; }
+      .hl { font: 400 112px/1.04 var(--font-sans); letter-spacing: -0.025em; }
+      .hl .line { display: block; overflow: hidden; padding-bottom: 0.08em; white-space: nowrap; }
+      .hl .li { display: inline-block; }
+      .hl b { font-weight: 700; color: var(--acc); }
+      .tag { position: absolute; font: 700 28px/1 var(--font-mono); letter-spacing: .04em; padding: 10px 16px; border-radius: 10px; border: 2px solid var(--line); background: #fff; color: var(--line); white-space: nowrap; }
+      .tag.hot { background: var(--accent-on-dark); }
+      .cap { position: absolute; font: 600 32px/1.2 var(--font-sans); text-align: center; width: 420px; }
+      .cap small { display: block; font: 500 24px/1.4 var(--font-mono); letter-spacing: .1em; opacity: .6; margin-bottom: 8px; }
+      .big { position: absolute; font: 700 300px/1 var(--font-sans); letter-spacing: -0.05em; }
+      .sub { position: absolute; font: 400 64px/1.1 var(--font-sans); }
+      .end { position: absolute; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 36px; }
+      .end .brand { font: 700 150px/1 var(--font-sans); letter-spacing: -0.03em; }
+      .end .row { display: flex; gap: 28px; align-items: center; }
+      .end .pill { font: 700 50px/1 var(--font-sans); background: var(--ink-on-light); color: var(--paper); padding: 22px 54px; border-radius: 999px; }
+      .end .url { font: 500 34px/1 var(--font-mono); }
+      .hud { position: absolute; display: flex; justify-content: space-between; font: 500 20px/1.5 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; z-index: 50; }
+      .hud-l { display: flex; align-items: center; gap: 12px; }
+      .hud-l i { width: 10px; height: 10px; border-radius: 50%; background: #ff4d4d; display: inline-block; }
+      .hud-r { text-align: right; display: flex; flex-direction: column; }
+      /* Layout per format: 16:9 split (text left, object right), 9:16 stacked (text top, object below) */
+      [data-format="16:9"] .col { left: 96px; top: 300px; width: 820px; }
+      [data-format="16:9"] .hud { left: 72px; right: 72px; top: 44px; }
+      [data-format="9:16"] .col { left: 64px; top: 330px; width: 952px; }
+      [data-format="9:16"] .hl { font-size: 118px; }
+      [data-format="9:16"] .hud { left: 64px; right: 64px; top: 96px; }
+      [data-format="1:1"] .col, [data-format="4:5"] .col { left: 72px; top: 150px; width: 936px; }
+      [data-format="1:1"] .hud, [data-format="4:5"] .hud { left: 64px; right: 64px; top: 44px; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="{{DURATION}}" data-width="{{WIDTH}}" data-height="{{HEIGHT}}">
+      <section id="s1" class="scene dark"><div class="stage" id="st1"></div>
+        <div class="col"><div class="eyebrow" id="e1"></div><div class="hl" id="h1"></div></div></section>
+      <section id="s2" class="scene dark"><div class="stage" id="st2"></div>
+        <div class="col"><div class="eyebrow" id="e2"></div><div class="hl" id="h2"></div></div></section>
+      <section id="s3" class="scene paper"><div class="stage" id="st3"></div>
+        <div class="col"><div class="eyebrow" id="e3"></div><div class="hl" id="h3"></div></div></section>
+      <section id="s4" class="scene dark"><div class="stage" id="st4"></div>
+        <div class="col"><div class="eyebrow" id="e4"></div><div class="hl" id="h4"></div></div></section>
+      <section id="s5" class="scene solid"><div class="stage" id="st5"></div>
+        <div class="col"><div class="eyebrow" id="e5"></div></div><div class="big"><span id="n5">0</span><span id="n5s"></span></div><div class="sub" id="sub5"></div></section>
+      <section id="s6" class="scene paper"><div class="stage" id="st6"></div>
+        <div class="end"><div class="brand" id="brand"></div><div class="row"><div class="pill" id="cta"></div><div class="url" id="url"></div></div></div></section>
+      <!-- <audio id="mix" src="assets/mix.wav" data-start="0" data-duration="{{DURATION}}" data-track-index="9"></audio> -->
+    </div>
+
+    <script>
+      (function () {
+        // ===== COPY: real facts only (facts.json). Headlines ≤ 6 words, exactly ONE <b>accent</b> word. =====
+        const C = {
+          hud: "Brand · campaign",
+          s1: { eyebrow: "Brand · what you do", lines: ["your bold", "first <b>promise</b>"], scene: "hook" },
+          s2: { eyebrow: "One platform", lines: ["everything in", "one <b>place</b>"], scene: "platform", hero: "APP", tags: ["fast", "simple", "secure"] },
+          s3: { eyebrow: "Three ways", lines: ["three <b>paths</b>"], scene: "features", items: ["Feature one", "Feature two", "Feature three"] },
+          s4: { eyebrow: "How it works", lines: ["built in", "<b>layers</b>"], scene: "how", layers: ["data", "logic", "api", "ui"] },
+          s5: { eyebrow: "Trusted by", number: 1000, suffix: "+", sub: "teams", scene: "proof" },
+          s6: { brand: "Brand", cta: "Get started", url: "example.com", scene: "cta" },
+        };
+        // ===== BRAND: one source of truth for page tokens AND isometric objects (from style.md) =====
+        const BRAND = { dark: "#121419", dark2: "#1c2029", paper: "#f2f0eb", solid: "#5b3df5", inkOnDark: "#f2f0eb", inkOnLight: "#121419",
+          inkOnSolid: "#ffffff", accentOnDark: "#a48bff", accentOnLight: "#4b2fe0", line: "#121419",
+          neutral: "#f4f3ef", plateDark: "#2a2f3a", plateLight: "#e4e1d9", gridCube: "#e9e5ff" };
+        const css = { "--dark": BRAND.dark, "--dark-2": BRAND.dark2, "--paper": BRAND.paper, "--solid": BRAND.solid, "--ink-on-dark": BRAND.inkOnDark,
+          "--ink-on-light": BRAND.inkOnLight, "--ink-on-solid": BRAND.inkOnSolid, "--accent-on-dark": BRAND.accentOnDark, "--accent-on-light": BRAND.accentOnLight, "--line": BRAND.line };
+        Object.entries(css).forEach(([k, v]) => document.documentElement.style.setProperty(k, v));
+        const LINE = BRAND.line, NEU = BRAND.neutral, HOT = BRAND.accentOnDark, PLATE_DARK = BRAND.plateDark, PLATE_LIGHT = BRAND.plateLight;
+
+        const K = window.IsoKit, root = document.getElementById("root");
+        const W = +root.dataset.width, H = +root.dataset.height, D = +root.dataset.duration;
+        const V = H > W * 1.5, SQ = !V && H >= W * 0.95; // 9:16 = vertical; 1:1 and 4:5 = square-ish
+        const tl = gsap.timeline({ paused: true });
+
+        // Scene times: hard cuts. Snap these to music beats/bars when you have a track (scripts/beats.py).
+        const endLen = Math.max(3, D * 0.16), each = (D - endLen) / 5;
+        const T = [0, 1, 2, 3, 4, 5].map((i) => +(i * each).toFixed(3));
+        K.cuts(tl, ["#s1", "#s2", "#s3", "#s4", "#s5", "#s6"].map((sel, i) => ({ sel, start: T[i], end: i < 5 ? T[i + 1] : undefined })));
+        const hudEl = K.hud(tl, root, { left: C.hud, duration: D, fps: 30, scenes: ["s1", "s2", "s3", "s4", "s5", "s6"].map((k, i) => ({ start: T[i], name: C[k].scene })) });
+        hudEl.setAttribute("data-layout-ignore", "");
+        ["dark", "dark", "paper", "dark", "solid", "paper"].forEach((bg, i) =>
+          tl.set(hudEl, { color: bg === "dark" ? "rgba(242,240,235,.72)" : bg === "solid" ? "rgba(255,255,255,.8)" : "rgba(18,20,25,.72)" }, T[i]));
+
+        const fillText = (k) => {
+          const c = C[k]; const e = document.getElementById("e" + k.slice(1)); if (e && c.eyebrow) e.textContent = c.eyebrow;
+          const h = document.getElementById("h" + k.slice(1)); if (h && c.lines) h.innerHTML = c.lines.map((l) => `<span class="line">${l}</span>`).join("");
+        };
+        ["s1", "s2", "s3", "s4", "s5"].forEach(fillText);
+        const put = (id, html) => { document.getElementById(id).innerHTML = K.svg(W, H, html); };
+        const tag = (scene, text, x, y, hot) => { const el = document.createElement("div"); el.className = "tag" + (hot ? " hot" : ""); el.textContent = text;
+          el.style.left = x + "px"; el.style.top = y + "px"; document.getElementById(scene).appendChild(el); gsap.set(el, { xPercent: -50, yPercent: -50 }); return el; };
+        // Object anchor per format: right column in 16:9, lower zone otherwise.
+        const anchor = (dx, dy) => (V ? { ox: W / 2 + dx * 0.55, oy: 1060 + dy } : SQ ? { ox: W / 2 + dx * 0.5, oy: H * 0.66 + dy } : { ox: 1420 + dx, oy: 560 + dy });
+        const U = (u) => (V ? u * 0.95 : SQ ? u * 0.8 : u);
+        const beat = each / 7; // a "beat" inside each scene for line timing
+
+        // S1 · statement + growth columns (frame 0 = thumbnail: line 1 + plate + first column visible)
+        { const o = Object.assign(anchor(0, 0), { u: U(92) });
+          let g = K.plate(Object.assign({}, o, { x: -0.4, y: -0.4, w: 4.8, d: 2.8, color: PLATE_DARK, stroke: LINE }));
+          [1, 2, 3.2].forEach((hgt, i) => { for (let k = 0; k < Math.ceil(hgt); k++)
+            g += K.box(Object.assign({}, o, { x: i * 1.55, y: 0.5, z: 0.12 + k, w: 1.1, d: 1.1, h: Math.min(1, hgt - k), color: i === 2 ? HOT : NEU, stroke: LINE, id: `s1c${i}_${k}` })); });
+          put("st1", g);
+          K.prepLines(document.getElementById("h1"));
+          tl.fromTo("#h1 .line:nth-child(1) .li", { y: 14 }, { y: 0, duration: 0.6, ease: "expo.out" }, 0);
+          tl.fromTo("#h1 .line:nth-child(2) .li", { yPercent: 110 }, { yPercent: 0, duration: 0.55, ease: "expo.out" }, 2 * beat);
+          tl.from("#e1", { opacity: 0, x: -20, duration: 0.4 }, 0.15);
+          let n = 0; [[1, 0], [1, 1], [2, 0], [2, 1], [2, 2], [2, 3]].forEach(([c, k]) => { const sel = `#s1c${c}_${k}`;
+            if (document.querySelector(sel)) tl.from(sel, { y: -140, opacity: 0, duration: 0.45, ease: "back.out(1.7)" }, 0.4 + n++ * 0.22); });
+        }
+        // S2 · hero cube + orbit ring + orbiting tags (positions are a pure function of the clock)
+        { const a = anchor(0, 40), o = Object.assign({}, a, { u: U(150) }), R = U(420);
+          let g = K.plate(Object.assign({}, o, { x: -1.1, y: -1.1, w: 3.2, d: 3.2, color: PLATE_DARK, stroke: LINE }));
+          g += K.ring({ cx: a.ox, cy: a.oy + U(90), rx: R, color: HOT, sw: 3, id: "s2ring" });
+          g += K.box(Object.assign({}, o, { x: -0.5, y: -0.5, z: 0.12, w: 1, d: 1, h: 1, color: HOT, stroke: LINE, id: "s2hero", labels: { top: { text: C.s2.hero, size: 56, color: LINE, font: "Outfit" } } }));
+          put("st2", g);
+          const tags = C.s2.tags.map((t, i) => tag("s2", t, 0, 0, i === 1));
+          // orbit geometry fixed at build time; the callback only does arithmetic on constants
+          const orb = { a: 0 }, CX = a.ox, CY = a.oy + U(90), RX = R, RY = R / 2, NT = tags.length;
+          const place = () => tags.forEach((el, i) => { const ang = orb.a + (i * Math.PI * 2) / NT, sn = Math.sin(ang);
+            el.style.left = CX + Math.cos(ang) * RX + "px"; el.style.top = CY + sn * RY + "px"; el.style.opacity = Math.max(0, Math.min(1, (sn + 0.35) / 0.45)); });
+          K.revealLines(tl, document.getElementById("h2"), [T[1] + 0.05, T[1] + 2 * beat]);
+          tl.from("#e2", { opacity: 0, x: -20, duration: 0.4 }, T[1] + 0.1);
+          tl.from("#s2hero", { y: -240, opacity: 0, duration: 0.6, ease: "back.out(1.5)" }, T[1] + 0.15);
+          tl.from("#s2ring", { scale: 0.3, opacity: 0, transformOrigin: "50% 50%", duration: 0.6, ease: "expo.out" }, T[1] + 0.45);
+          tl.fromTo(orb, { a: 0.6 }, { a: 0.6 + Math.PI * 0.9, duration: T[2] - T[1], ease: "none", onUpdate: place }, T[1]);
+          tl.from(tags, { y: 18, duration: 0.35, stagger: 0.12, ease: "back.out(2)" }, T[1] + 0.7);
+          place();
+        }
+        // S3 · three plates = three features (paper background)
+        { const xs = V ? [W / 2, W / 2, W / 2] : [W * 0.19, W * 0.5, W * 0.81];
+          const ys = V ? [820, 1080, 1340] : SQ ? [H * 0.62, H * 0.62, H * 0.62] : [600, 600, 600];
+          const u = V ? 62 : SQ ? 52 : 82; let g = "";
+          xs.forEach((x, i) => { const o = { ox: x, oy: ys[i], u };
+            g += `<g id="s3p${i}">` + K.plate(Object.assign({}, o, { x: -1.5, y: -1.5, w: 3, d: 3, color: PLATE_LIGHT, stroke: LINE }));
+            if (i === 0) for (let k = 0; k < 4; k++) g += K.box(Object.assign({}, o, { x: -0.7, y: -0.9, z: 0.12 + k * 0.16, w: 1.4, d: 1.8, h: 0.1, color: k === 3 ? HOT : NEU, stroke: LINE }));
+            else if (i === 1) { g += K.box(Object.assign({}, o, { x: -1.1, y: -0.4, z: 0.12, w: 0.9, d: 0.9, h: 0.9, color: NEU, stroke: LINE }));
+              g += K.box(Object.assign({}, o, { x: 0.25, y: -0.4, z: 0.12, w: 0.9, d: 0.9, h: 1.4, color: HOT, stroke: LINE })); }
+            else g += K.box(Object.assign({}, o, { x: -0.6, y: -0.6, z: 0.12, w: 1.2, d: 1.2, h: 1.8, color: NEU, stroke: LINE, slots: 3 }));
+            g += "</g>";
+            const cap = document.createElement("div"); cap.className = "cap"; cap.id = `c3${i}`; cap.innerHTML = `<small>0${i + 1}</small>${C.s3.items[i]}`;
+            cap.style.left = (V ? x + 330 : x) + "px"; cap.style.top = (V ? ys[i] - 30 : ys[i] + u * 3) + "px"; document.getElementById("s3").appendChild(cap);
+            cap.querySelector("small").setAttribute("data-layout-ignore", ""); gsap.set(cap, { xPercent: -50 }); });
+          put("st3", g);
+          if (V || SQ) document.querySelectorAll("#s3 .cap").forEach((c) => (c.style.width = V ? "300px" : "300px"));
+          K.revealLines(tl, document.getElementById("h3"), [T[2] + 0.05]);
+          tl.from("#e3", { opacity: 0, x: -20, duration: 0.4 }, T[2] + 0.1);
+          [0, 1, 2].forEach((i) => { tl.from(`#s3p${i}`, { y: -160, opacity: 0, duration: 0.55, ease: "back.out(1.5)" }, T[2] + 0.35 + i * 0.35);
+            tl.from(`#c3${i}`, { y: 24, opacity: 0, duration: 0.4, ease: "power3.out" }, T[2] + 0.6 + i * 0.35); });
+        }
+        // S4 · exploded stack with leader tags
+        { const o = Object.assign(anchor(-180, 40), { u: U(100) }); let g = "";
+          C.s4.layers.forEach((n, i) => { g += K.box(Object.assign({}, o, { x: -1.4, y: -1.4, z: i * 0.75, w: 2.8, d: 2.8, h: 0.32, color: i === C.s4.layers.length - 1 ? HOT : i % 2 ? "#e4e1d9" : NEU, stroke: LINE, id: `s4l${i}` }));
+            const p = K.P(o, 1.4, -1.4, i * 0.75 + 0.16); tag("s4", n, p[0] + U(150), p[1], i === C.s4.layers.length - 1).id = `s4t${i}`; });
+          put("st4", g);
+          K.revealLines(tl, document.getElementById("h4"), [T[3] + 0.05, T[3] + 2 * beat]);
+          tl.from("#e4", { opacity: 0, x: -20, duration: 0.4 }, T[3] + 0.1);
+          C.s4.layers.forEach((n, i) => { tl.from(`#s4l${i}`, { y: -200, opacity: 0, duration: 0.5, ease: "back.out(1.6)" }, T[3] + 0.2 + i * 0.22);
+            tl.from(`#s4t${i}`, { x: 30, opacity: 0, duration: 0.35, ease: "power3.out" }, T[3] + 0.45 + i * 0.22);
+            tl.to([`#s4l${i}`, `#s4t${i}`], { y: -i * 14, duration: 1.2, ease: "sine.inOut" }, T[3] + 1.6); });
+        }
+        // S5 · big number on the solid brand colour + cube grid
+        { document.getElementById("e5").textContent = C.s5.eyebrow; document.getElementById("n5s").textContent = C.s5.suffix; document.getElementById("sub5").textContent = C.s5.sub;
+          const big = document.querySelector("#s5 .big"), sub = document.getElementById("sub5");
+          if (V) { big.style.left = "64px"; big.style.top = "420px"; big.style.fontSize = "250px"; sub.style.left = "70px"; sub.style.top = "700px"; document.querySelector("#s5 .col").style.top = "330px"; }
+          else if (SQ) { big.style.left = "72px"; big.style.top = "230px"; big.style.fontSize = "230px"; sub.style.left = "78px"; sub.style.top = "480px"; }
+          else { big.style.left = "96px"; big.style.top = "260px"; sub.style.left = "104px"; sub.style.top = "600px"; document.querySelector("#s5 .col").style.top = "200px"; }
+          const o = V ? { ox: W / 2, oy: 1000, u: 66 } : SQ ? { ox: W * 0.62, oy: H * 0.66, u: 34 } : { ox: 1480, oy: 470, u: 46 }; let g = "";
+          for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) g += K.box(Object.assign({}, o, { x: c * 1.25, y: r * 1.25, w: 1, d: 1, h: 1, color: (r + c) % 3 === 0 ? "#ffffff" : BRAND.gridCube, stroke: LINE, sw: 2.5, id: `s5c${r}_${c}` }));
+          put("st5", g);
+          K.counter(tl, document.getElementById("n5"), 0, C.s5.number, T[4] + 0.15, 1.3);
+          tl.from("#e5", { opacity: 0, duration: 0.3 }, T[4] + 0.05);
+          tl.from("#sub5", { y: 30, opacity: 0, duration: 0.45, ease: "power3.out" }, T[4] + 0.5);
+          for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) tl.from(`#s5c${r}_${c}`, { y: -90, opacity: 0, duration: 0.4, ease: "back.out(2)" }, T[4] + 0.15 + (r + c) * 0.07);
+          tl.to("#s5 .big", { scale: 1.04, transformOrigin: "0% 50%", duration: 0.12, yoyo: true, repeat: 1 }, T[4] + 1.45);
+        }
+        // S6 · end card (CTA on screen ≥ 2 s)
+        { document.getElementById("brand").textContent = C.s6.brand; document.getElementById("cta").textContent = C.s6.cta; document.getElementById("url").textContent = C.s6.url;
+          const end = document.querySelector("#s6 .end"); end.style.top = (V ? 760 : H * 0.36) + "px";
+          if (V) end.querySelector(".row").style.flexDirection = "column";
+          tl.from("#s6 .brand", { y: 40, opacity: 0, duration: 0.6, ease: "expo.out" }, T[5] + 0.05);
+          tl.from("#s6 .row", { y: 30, opacity: 0, duration: 0.45, ease: "power3.out" }, T[5] + 0.35);
+          tl.to("#s6 .pill", { scale: 1.05, duration: 0.46, yoyo: true, repeat: 3, ease: "sine.inOut" }, T[5] + 1.2);
+        }
+        // Auto-fit headlines: shrink a headline until every line fits its column (runs once, deterministic).
+        document.querySelectorAll(".hl").forEach((h) => { const w = h.parentElement.clientWidth; let s = V ? 118 : 112, guard = 0;
+          while ([...h.querySelectorAll(".line")].some((ln) => ln.scrollWidth > w) && guard++ < 60) { s -= 3; h.style.fontSize = s + "px"; } });
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
+    </script>
+  </body>
+</html>

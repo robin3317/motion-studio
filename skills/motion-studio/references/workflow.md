@@ -29,25 +29,27 @@ Each stage lists inputs, actions, outputs and the gate. File names refer to the 
 ```
 6. Music: Step-by-step → offer 3 licensed tracks (title, source, licence, mood, BPM) or the user's own. Autopilot → choose one. See `audio.md`.
 7. If there's a voiceover, get or generate it **now** (`voiceover.md`) and retime the storyboard to its real word timings.
+8. Apply `craft.md`: ≤ 6 words and one accent word per headline, and write a physical metaphor next to every scene. Note when each headline line appears (the VO word, or the beat if there's no VO).
 
 **Gate G2: Script + storyboard.** Show it as a beat table.
 
 ## S3: Style direction
 1. Pick a preset from `styles/` (the playbook suggests defaults). Adapt it: replace the preset's accent colours with the brand palette, keep the preset's motion rules.
 2. Fonts → `typography-i18n.md`. Download the font files into `assets/fonts/` (no fetching at render time).
-3. Create the project if it doesn't exist yet: `python "<skill>/scripts/new_project.py" --name <name> --format <fmt> --duration <s> --lang <code> [--template three-starter] --install` (ask before `--install`). For extra formats: `--composition-only --format <fmt>`.
+3. Create the project if it doesn't exist yet: `python "<skill>/scripts/new_project.py" --name <name> --format <fmt> --duration <s> --lang <code> [--template three-starter|isometric-kinetic] --install` (ask before `--install`). The `isometric-kinetic` template (style `isometric-kinetic.md`) ships a 6-scene layout for all formats: edit its `C` (copy) and `BRAND` (tokens) objects first, then re-time the scenes `T` to the music beats or VO. For extra formats: `--composition-only --format <fmt>`.
 4. Build only the frames needed and render **2–3 stills**: the hook, one middle beat, the CTA (`npx hyperframes snapshot --at 0,8,22` inside the composition). To check the safe zones, temporarily add `class="show-guides"` to `<html>`, and remove it before rendering finals.
 5. Finalize `style.md`: palette (hex + role), fonts (role, weight, size scale), motion feel (easing, typical durations), grain/texture, transition type.
 
 **Gate G3: Style frames.** Show the stills and name the preset.
 
 ## S4: Build
-1. Work in the project's `composition/` folder (from `templates/starter` or `templates/three-starter`). Search the `/hyperframes-registry` skill for a ready-made block before hand-building a shot (each shot card lists registry starting points). Delegate syntax to the `/hyperframes` skill.
+1. Work in the project's `composition/` folder (from `templates/starter`, `templates/three-starter` or `templates/isometric-kinetic`). Search the `/hyperframes-registry` skill for a ready-made block before hand-building a shot (each shot card lists registry starting points). Delegate syntax to the `/hyperframes` skill.
 2. Build scene by scene from `storyboard.json`. One scene = one timed group. Keep scene timing in data, not hard-coded across files.
 3. **Frame 0 is the thumbnail** on social players: the hook text or key image must already be visible at 0 s, not fading in from an empty frame.
 4. Determinism (required by HyperFrames): no `Date.now()`, no `requestAnimationFrame` loops, no unseeded `Math.random()`, no network fetches during the render. All assets are local and preloaded.
 5. 3D scenes → `three-d.md` (start from `templates/three-starter`).
 6. Run `npm run check` (lint, runtime, layout, motion, contrast) after each major scene and fix the errors.
+7. Before the preview render, go through the `craft.md` checklist. Fix the misses: they're what make a video look generic.
 
 ## S5: Audio
 1. Lay down the voiceover first (if any), then the music bed, then SFX → `audio.md`.

@@ -11,6 +11,7 @@ Required: the product name and real images (user uploads, product page, or scree
 ## Defaults
 - Physical products: **Cinematic 3D** or **Minimal Luxury** (premium), **Playful Pop** (consumer, fun).
 - Software/apps: **Tech Neon** or **Corporate Clean**, built around `device-mockup-screens`.
+- Software/apps that need explaining (APIs, platforms, dev tools): **Isometric Kinetic**, with `iso-orbit-hero`, `exploded-stack` and `terminal-window` around one real `device-mockup-screens` shot.
 - Music: energetic, 110–130 BPM. Hit the product reveal on a downbeat.
 
 ## Beat structures

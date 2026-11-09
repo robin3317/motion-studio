@@ -11,5 +11,8 @@ A preset is a **starting point**: keep its motion and typography rules, and swap
 | `playful-pop.md` | Fun, bouncy, colourful | Consumer apps, food, kids/edu, casual brands |
 | `tech-neon.md` | Dark, glowing, futuristic | SaaS, AI, dev tools, gaming, crypto/fintech |
 | `editorial.md` | Magazine, artful, grid-based | Agencies, media, culture, fashion drops, brand stories |
+| `isometric-kinetic.md` | Smart, crisp, explainer-tech: isometric objects + kinetic headlines, dark/paper/solid rhythm | SaaS & tech company promos, digital products, courses, explainers, B2B, announcements with facts. Has its own template: `--template isometric-kinetic` |
+
+Whatever the preset, apply `../craft.md` (one accent word, a metaphor per scene, background rhythm, sync text to VO or beats).
 
 Adapting colours: map the brand's primary to the preset's **accent**, keep the preset's background logic (light/dark), and check text contrast (≥ 4.5:1). If the brand's primary fails contrast as a text colour, use it for shapes and highlights only.

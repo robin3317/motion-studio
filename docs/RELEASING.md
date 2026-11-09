@@ -20,3 +20,10 @@ Without the GitHub CLI: create the repo on github.com, then run `git remote add 
 2. Rebuild the ZIPs into `dist/` (skill ZIP = the `motion-studio/` folder; plugin ZIP = the repo without dist/, tests/renders/, docs/_references-bundle.md).
 3. Commit, tag `vX.Y.Z`, push, then run `gh release create`.
 Plugin users update with `/plugin marketplace update codeonces`.
+
+## How users get notified
+`skills/motion-studio/scripts/update_check.py` reads the GitHub **Releases** of robin3317/motion-studio (pre-releases included) and compares the newest tag with the installed `metadata.version` in SKILL.md. So every release needs:
+- a **tag in the form vX.Y.Z[-pre]** that is higher than the last one (e.g. v0.1.0-beta → v0.2.0-beta → v1.0.0)
+- a **published GitHub Release** for that tag (`gh release create …`). Tags alone and drafts are ignored
+- `metadata.version` in BOTH skills' SKILL.md and `version` in `.claude-plugin/plugin.json` set to the same number
+Write good release notes: the upgrade skill summarises them for users.

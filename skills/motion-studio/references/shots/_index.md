@@ -19,5 +19,13 @@ Each card is one reusable animation idea. Times are relative to the shot start. 
 | `lower-third.md` | Footage overlay | 3–4 s | footage-edit |
 | `caption-highlight.md` | Captions | continuous | footage-edit, any VO video |
 | `cta-end-card.md` | Outro | 2.5–4 s | all |
+| `iso-statement.md` | Isometric / claim | 2.5–4 s | company, product, release |
+| `iso-orbit-hero.md` | Isometric / product | 3–5 s | company, product |
+| `iso-platform-row.md` | Isometric / info | 3–4.5 s | company, product, release |
+| `exploded-stack.md` | Isometric / how it works | 3–4.5 s | company, product |
+| `terminal-window.md` | UI / dev | 2.5–4 s | product, release |
+| `timeline-axis.md` | Data / history | 3–4.5 s | company, release |
 
-Rules: don't use the same card twice in a row; vary scale (wide → close) and direction between consecutive shots; every card's SFX cue is optional, so follow `audio.md` placement rules.
+The `iso-*` and `exploded-stack` cards are built from `templates/isometric-kinetic` (`lib/iso-kit.js`) and fit the Isometric Kinetic style best, but any flat style can borrow them (recolour the faces). `terminal-window` and `timeline-axis` work in every style.
+
+Rules (see `../craft.md`): don't use the same card twice in a row; vary scale (wide → close) and direction between consecutive shots; every card's SFX cue is optional, so follow `audio.md` placement rules.

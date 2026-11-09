@@ -27,13 +27,23 @@ Keep this file as your map. Load a reference file only when the current stage ne
 8. **Frame 0 is the thumbnail.** The hook text or key image is visible at 0 s.
 9. **Respect the language.** Write the script and on-screen text in the language the user asks for, or the language of their brief. Use fonts that render that script correctly (`references/typography-i18n.md`).
 
+## Update check (first, once per session)
+
+Run `python scripts/update_check.py` from this skill's folder. It takes under 3 s, checks at most once a day, and prints nothing when offline, snoozed or disabled.
+- No output, or `UP_TO_DATE`: say nothing and continue.
+- `UPDATE_AVAILABLE <local> <latest> <method>`:
+  - **Step-by-step, or mode not chosen yet:** ask once, in a single short question: "motion-studio <latest> is available (you have <local>). **Upgrade now** / **Remind me tomorrow** / **Snooze a week** / **Don't ask again**?"
+    - Upgrade now → follow the `motion-studio-upgrade` skill (or run the `COMMAND:` line it printed). Then continue the user's request.
+    - Remind me tomorrow → `--snooze 1d`. Snooze a week → `--snooze 7d`. Don't ask again → `--never`.
+  - **Autopilot:** don't stop for it. Add one line to the final message: the new version and the `COMMAND:` to upgrade.
+
 ## Step 0: Environment check
 
 Run `python scripts/preflight.py` from the skill folder, with the video project folder as the working directory. It is read-only and reports Node, FFmpeg, Python packages, HyperFrames CLI and HyperFrames skills.
 - All green → continue.
 - Anything missing → read `references/setup.md` and offer the guided install. Don't start production until the render path works.
 
-If the user has no project folder yet, ask where to create it (default: a new folder named after the video, e.g. `acme-promo/`). Create it with `python scripts/new_project.py --name <name> --format <fmt> --duration <s> --lang <code> [--template three-starter] [--install]`; ask before `--install` (it downloads GSAP and Three.js from npm).
+If the user has no project folder yet, ask where to create it (default: a new folder named after the video, e.g. `acme-promo/`). Create it with `python scripts/new_project.py --name <name> --format <fmt> --duration <s> --lang <code> [--template three-starter|isometric-kinetic] [--install]`; ask before `--install` (it downloads GSAP, Three.js and, for `isometric-kinetic`, its fonts from npm).
 
 ## Step 1: Choose the mode
 
@@ -66,9 +76,9 @@ Full stage details are in `references/workflow.md`. Every video goes through the
 | # | Stage | What happens | Load | Gate |
 |---|---|---|---|---|
 | S1 | Brief & data | Collect the brief, gather facts, logo, colours, images, screenshots, footage | `data-gathering.md`, playbook | **G1: Brief + facts** |
-| S2 | Script & storyboard | Hook, beats and CTA. Scene list with timing, on-screen text, shots, VO lines | playbook, `shots/`, `voiceover.md` | **G2: Script + storyboard** |
+| S2 | Script & storyboard | Hook, beats and CTA. Scene list with timing, on-screen text, a physical metaphor per scene, shots, VO lines | playbook, `shots/`, `craft.md`, `voiceover.md` | **G2: Script + storyboard** |
 | S3 | Style direction | Choose a style preset, adapt it to the brand, render 2–3 style frames (stills) | `styles/`, `typography-i18n.md` | **G3: Style frames** |
-| S4 | Build | Write the HyperFrames composition scene by scene: registry blocks first, Three.js for 3D. Run `npm run check` | `/hyperframes`, `/hyperframes-registry`, `three-d.md` | – |
+| S4 | Build | Write the HyperFrames composition scene by scene: registry blocks first, Three.js for 3D. Run `npm run check` and the `craft.md` checklist | `/hyperframes`, `/hyperframes-registry`, `three-d.md`, `craft.md` | – |
 | S5 | Audio | Voiceover (if any), pick music, place SFX on visual events, duck and mix | `audio.md`, `voiceover.md` | – |
 | S6 | Preview cut | Low-res preview with the full audio mix. Check timing and readability | `/hyperframes-cli` skill, `qa.md` | **G4: Preview + audio** |
 | S7 | Final render & QA | Render every requested format, run QA checks, deliver the MP4 | `qa.md` | – |
@@ -117,7 +127,8 @@ For more than one format, design for the tallest frame's safe zone first, then r
 | `references/data-gathering.md` | Fetching websites, screenshots, product images, footage intake |
 | `references/playbooks/*.md` | After the playbook is chosen in Step 2 |
 | `references/shots/` | Writing the storyboard (shot recipe cards) |
-| `references/styles/` | Choosing and adapting a visual style |
+| `references/styles/` | Choosing and adapting a visual style (8 presets, incl. `isometric-kinetic` with its own template) |
+| `references/craft.md` | Writing the storyboard and before every preview: anti-slop rules for text, metaphors, rhythm, frame 0 |
 | `references/typography-i18n.md` | Choosing fonts, especially for non-Latin scripts |
 | `references/three-d.md` | Any scene that uses 3D |
 | `references/audio.md` | Music sourcing, SFX placement, ducking, mixing, licences |
@@ -137,6 +148,7 @@ For more than one format, design for the tallest frame's safe zone first, then r
 
 | Script | Does |
 |---|---|
+| `update_check.py` | Checks for a newer motion-studio release (daily, silent offline; `--snooze`, `--never`) |
 | `preflight.py` | Read-only environment check |
 | `new_project.py` | Creates the project folder + composition for a format (from `templates/`) |
 | `capture_site.mjs` | Website screenshots per format + `brand.json` (colours, fonts, logo candidates) |

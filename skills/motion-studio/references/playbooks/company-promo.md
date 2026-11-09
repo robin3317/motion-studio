@@ -8,7 +8,7 @@ Required: company name, and a website or written brief. Helpful: logo, brand col
 Gather with `data-gathering.md` §1–2. Every fact goes in `facts.json`.
 
 ## Defaults
-- Style: **Corporate Clean**. Alternatives: Editorial (agencies, media), Tech Neon (tech/SaaS), Minimal Luxury (premium services).
+- Style: **Corporate Clean**. Alternatives: Editorial (agencies, media), Tech Neon (tech/SaaS), **Isometric Kinetic** (tech/SaaS/B2B with a clear "how it works"), Minimal Luxury (premium services).
 - Music: confident, modern, 100–125 BPM. Builds gently, no drops.
 - VO: optional. Strong fit for 30–60 s.
 

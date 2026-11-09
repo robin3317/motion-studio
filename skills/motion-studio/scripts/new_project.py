@@ -3,12 +3,14 @@
 
 Usage:
     python new_project.py --name acme-promo --format 9:16 [--duration 20] [--lang en]
-                          [--template starter|three-starter] [--parent .] [--install]
+                          [--template starter|three-starter|isometric-kinetic] [--parent .] [--install]
 
 Creates <parent>/<name>/ with brief.md, facts.json, decisions.md, script.md, storyboard.json,
 style.md, credits.json, assets/, audio/, composition/ (from templates/), renders/previews/.
 Refuses to overwrite an existing project folder.
---install runs `npm install` inside composition/ (downloads gsap + three from npm; ask the user first).
+--install runs `npm install` inside composition/ (downloads gsap + three, plus the template's @fontsource fonts; ask the user first).
+Templates: starter (3 scenes, 2D), three-starter (Three.js 3D), isometric-kinetic (6 scenes, iso objects +
+kinetic headlines, lib/iso-kit.js; see references/styles/isometric-kinetic.md).
 Extra formats for the same project: run again with --composition-only --format 1:1
 (creates composition-1x1/).
 """
@@ -82,7 +84,7 @@ def main():
     ap.add_argument("--format", default="16:9", choices=FORMATS.keys())
     ap.add_argument("--duration", type=float, default=20.0, help="seconds (default 20; brief default is 15–30)")
     ap.add_argument("--lang", default="en", help="BCP-47 language code for on-screen text, e.g. en, bn, ar")
-    ap.add_argument("--template", default="starter", help="starter | three-starter")
+    ap.add_argument("--template", default="starter", help="starter | three-starter | isometric-kinetic")
     ap.add_argument("--parent", default=".", help="folder to create the project in")
     ap.add_argument("--composition-only", action="store_true", help="add another format to an existing project")
     ap.add_argument("--install", action="store_true", help="run npm install in the composition (ask first)")
@@ -94,6 +96,8 @@ def main():
         sys.exit("Use a kebab-case name: lowercase letters, digits, hyphens.")
     if a.template == "starter" and a.duration < 6:
         sys.exit("Duration must be at least 6 s for the starter's 3-scene layout (edit scenes for shorter pieces).")
+    if a.template == "isometric-kinetic" and a.duration < 12:
+        sys.exit("Duration must be at least 12 s for the isometric-kinetic 6-scene layout (delete scenes for shorter pieces).")
     proj = os.path.abspath(os.path.join(a.parent, a.name))
     comp_name = "composition" if not a.composition_only else "composition-" + a.format.replace(":", "x")
 

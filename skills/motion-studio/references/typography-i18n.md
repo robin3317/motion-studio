@@ -3,7 +3,7 @@
 ## Fonts: licence first
 - Use fonts with a licence that allows video use: SIL Open Font License (most Google Fonts), Apache, or the brand's own fonts **supplied by the user**.
 - Download font files into `assets/fonts/` and load them locally. Never rely on a font CDN at render time.
-- Easiest source of OFL fonts: npm `@fontsource/<family>` packages (e.g. `npm i @fontsource/space-grotesk @fontsource/noto-sans-bengali`). Copy the needed `.woff2` files from `node_modules/@fontsource/<family>/files/` into `assets/fonts/`. They work offline, and the licence file sits next to them.
+- Easiest source of OFL fonts: npm `@fontsource/<family>` packages (e.g. `npm i @fontsource/space-grotesk @fontsource/noto-sans-bengali`). Copy the needed `.woff2` files from `node_modules/@fontsource/<family>/files/` into `assets/fonts/`. They work offline, and the licence file sits next to them. Alternative (used by `templates/isometric-kinetic`): list the `@fontsource` packages in the composition's `package.json` and point `@font-face` at `node_modules/@fontsource/<family>/files/...`; `npm install` then fetches them once, before rendering.
 - Symbols from another script (e.g. the taka sign ৳ inside English text): add a second `@font-face` with the **same family name** and a `unicode-range` (e.g. `U+0980-09FF` for Bengali). The browser then uses it only for those characters.
 - Don't use `-webkit-text-stroke` for caption outlines: on fonts with overlapping contours it draws lines through the letters. Use layered `text-shadow` instead.
 - Record each font in `credits.json` (name, source, licence).

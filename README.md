@@ -66,6 +66,20 @@ npx hyperframes skills update
 ```
 Or, in Claude Code: `claude plugin marketplace add heygen-com/hyperframes` then `claude plugin install hyperframes@hyperframes`. Start a new session afterwards.
 
+## Updating
+
+motion-studio checks for a new release at most **once a day** when it starts. It stays silent when offline and sends nothing about you. When a new version is out, it asks: **Upgrade now / Remind me tomorrow / Snooze a week / Don't ask again**.
+
+To upgrade at any time, say **"upgrade motion-studio"** (plugin users: `/motion-studio:motion-studio-upgrade`), or by hand:
+
+| Installed with | Upgrade |
+|---|---|
+| Plugin | `/plugin marketplace update codeonces`, then `/reload-plugins`. Or turn on auto-update: `/plugin` → Marketplaces → codeonces → Enable auto-update |
+| Skills CLI | `npx skills add robin3317/motion-studio` |
+| ZIP upload | Download the new ZIP from [Releases](https://github.com/robin3317/motion-studio/releases) and upload it again |
+
+To turn the check off, set `MOTION_STUDIO_NO_UPDATE_CHECK=1`.
+
 ## Quick start
 
 Open a folder for your video, start Claude, and ask:

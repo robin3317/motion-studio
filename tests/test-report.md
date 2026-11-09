@@ -51,3 +51,17 @@ Method: `claude -p "<prompt>" --max-turns 2 --allowedTools Skill`, checking whic
 - `claude plugin validate .` → passed. `claude plugin validate .claude-plugin/marketplace.json` → passed
 - `claude plugin marketplace add` + `claude plugin install motion-studio@codeonces` → installed, version 0.1.0-beta, Skills (1): motion-studio
 - Skill ZIP: 93 files, 19.7 MB (most of it is music). Upload in the Claude desktop app is not tested yet
+
+## ZIP upload test (2026-11-09, Robin, Claude desktop / Cowork on Windows)
+- Uploading motion-studio-skill-v0.1.0-beta.zip (19.7 MB) worked: no size limit hit
+- The skill triggered and made a 10-second promo end to end on Windows (first native Windows run)
+- Robin's note: this run used 3D text animation, which looked better than the flat 2D test videos (a direction for v0.2)
+
+## Isometric Kinetic (unreleased, 2026-11-09)
+Goal: fix the "flat, AI-slop" look from v0.1 with a new style + template + craft rules.
+- **Optimizely remake** (same brief as test 1): 24 s, 16:9, 7 scenes cut on music beats (dark → paper → lime-solid rhythm), Optimizely palette, music + 26 SFX.
+  `hyperframes check` passed; `qa_check.py` all pass (-14.0 LUFS / -1.0 dBTP). Files: `renders/v6-iso-optimizely-16x9-v1.mp4`, before/after board `renders/v6-iso-before-after.png`
+- **Template** `--template isometric-kinetic`, 20 s, placeholder copy: `hyperframes check` passes in 16:9, 9:16, 1:1 and 4:5 (0 errors, 0 lint warnings, 24/24 contrast checks). 4:5 contact sheet: `renders/iso-template-4x5-contact.jpg`
+- Bugs found and fixed: 4:5 was laid out as 9:16 (vertical test now `H > 1.5·W`); the orbit `onUpdate` triggered `gsap_callback_dom_measurement` (geometry now precomputed); tokens read with getComputedStyle (now one `BRAND` object); CSS transform on captions fought GSAP (now `gsap.set xPercent`)
+- `new_project.py` refuses < 12 s for this template (6 scenes)
+- Not yet done: a real-brand 9:16 render with voiceover (line reveals synced to VO words) and a non-tech brand test
