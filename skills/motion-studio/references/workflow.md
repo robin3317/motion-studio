@@ -37,7 +37,7 @@ Each stage lists inputs, actions, outputs and the gate. File names refer to the 
 1. Pick a preset from `styles/` (the playbook suggests defaults). Adapt it: replace the preset's accent colours with the brand palette, keep the preset's motion rules.
 2. Fonts → `typography-i18n.md`. Download the font files into `assets/fonts/` (no fetching at render time).
 3. Create the project if it doesn't exist yet: `python "<skill>/scripts/new_project.py" --name <name> --format <fmt> --duration <s> --lang <code> [--template three-starter|isometric-kinetic] --install` (ask before `--install`). The `isometric-kinetic` template (style `isometric-kinetic.md`) ships a 6-scene layout for all formats: edit its `C` (copy) and `BRAND` (tokens) objects first, then re-time the scenes `T` to the music beats or VO. For extra formats: `--composition-only --format <fmt>`.
-4. Build only the frames needed and render **2–3 stills**: the hook, one middle beat, the CTA (`npx hyperframes snapshot --at 0,8,22` inside the composition). To check the safe zones, temporarily add `class="show-guides"` to `<html>`, and remove it before rendering finals.
+4. Build only the frames needed and render **2–3 stills**: the hook, one middle beat, the CTA (`npx hyperframes snapshot --at 0,8,22` inside the composition). To check the safe zones, temporarily add `class="show-guides"` to `<html>`, and remove it before rendering finals. If the snapshot says Chrome was not found, set `HYPERFRAMES_BROWSER_PATH` to the installed Chrome that preflight prints.
 5. Finalize `style.md`: palette (hex + role), fonts (role, weight, size scale), motion feel (easing, typical durations), grain/texture, transition type.
 
 **Gate G3: Style frames.** Show the stills and name the preset.
@@ -45,25 +45,39 @@ Each stage lists inputs, actions, outputs and the gate. File names refer to the 
 ## S4: Build
 1. Work in the project's `composition/` folder (from `templates/starter`, `templates/three-starter` or `templates/isometric-kinetic`). Search the `/hyperframes-registry` skill for a ready-made block before hand-building a shot (each shot card lists registry starting points). Delegate syntax to the `/hyperframes` skill.
 2. Build scene by scene from `storyboard.json`. One scene = one timed group. Keep scene timing in data, not hard-coded across files.
+   - **Scene pattern:** every scene is a `<section class="scene">` inside the one `index.html`, shown and hidden by the single master timeline, as the three templates do. This is the pattern the skill is tested with. Use a HyperFrames sub-composition (`compositions/*.html` mounted with `data-composition-src`) only when a registry block installs as one, and leave that block as it came.
 3. **Frame 0 is the thumbnail** on social players: the hook text or key image must already be visible at 0 s, not fading in from an empty frame.
 4. Determinism (required by HyperFrames): no `Date.now()`, no `requestAnimationFrame` loops, no unseeded `Math.random()`, no network fetches during the render. All assets are local and preloaded.
 5. 3D scenes → `three-d.md` (start from `templates/three-starter`).
-6. Run `npm run check` (lint, runtime, layout, motion, contrast) after each major scene and fix the errors.
+6. Run `npm run check` (lint, runtime, layout, motion, contrast) after each major scene and fix the errors. The check never edits your files: it only writes its reports under `.hyperframes/`.
 7. Before the preview render, go through the `craft.md` checklist. Fix the misses: they're what make a video look generic.
 
 ## S5: Audio
 1. Lay down the voiceover first (if any), then the music bed, then SFX → `audio.md`.
 2. SFX go on **visual events** (impacts, reveals, transitions, UI clicks), not on every element. Leave space around important VO words.
 3. Duck the music under the voice. Final loudness and peak targets are in `audio.md`.
-4. Record every audio file in `credits.json`.
+4. Put the finished mix in the composition: copy it to `composition/assets/mix.wav` and uncomment the template's `<audio>` example. Without that element the render is silent.
+5. Record every audio file in `credits.json`.
+
+## Rendering (S6 and S7)
+Render with the script, from the project folder, **in the foreground**:
+```
+python "<skill>/scripts/render.py" --out renders/<file>.mp4 --quality draft|delivery --budget <seconds>
+```
+- **Never background a render** (`&`, `nohup`, a detached task) and never start a second one while one runs. A backgrounded render is killed when the call ends and leaves Chrome processes behind.
+- `--budget` is the longest that one call may run. Give the call your shell tool's longest time limit and set `--budget` to that limit minus 60 s (a 10-minute limit → `--budget 540`). The default, 100, fits a 2-minute limit.
+- `RENDER_DONE` → finished. `RENDER_INCOMPLETE` (exit code 3) → run the **same** command again: it resumes from the frames already saved and tells you how many calls are left. `RENDER_FAILED` → read the log lines it prints and fix the composition.
+- Don't edit the composition between the calls of one render. If any of its files changed, the next call notices and starts again from frame 0, so old and new frames never mix.
+- It handles the slow-host details itself: one worker on small machines, a longer start-up timeout for WebGL, an installed Chrome when HyperFrames can't download its own.
+- Don't use `npx hyperframes render --start/--end`. That path leaves out `node_modules`, so compositions made from these templates fail after 45 s. Several formats or countdown variants: one `render.py` call per composition, one after another. `--variables` goes after `--`, e.g. `-- --variables '{"daysLeft":3}'`. Only `--batch` is called on `npx hyperframes render` directly.
 
 ## S6: Preview cut
-1. Render a quick preview with the full mix: `npx hyperframes render -q draft -o ../renders/previews/<name>-preview-vN.mp4`.
+1. Render a quick preview with the full mix: `python "<skill>/scripts/render.py" --out renders/previews/<name>-preview-vN.mp4 --quality draft`.
 2. Self-check before showing it: run the `qa.md` checklist on the preview (contact sheet + audio levels).
 3. **Gate G4: Preview + audio.** Step-by-step: share the preview and list what you checked. Autopilot: fix the issues you found and continue.
 
 ## S7: Final render & QA
-1. Render each requested format at full resolution: `npx hyperframes render -q delivery -o ../renders/<project>-<format>-vN.mp4` (never overwrite). For variants of one composition (e.g. countdown days), use `--variables` or `--batch`.
+1. Render each requested format at full resolution: `python "<skill>/scripts/render.py" --composition <composition folder> --out renders/<project>-<format>-vN.mp4 --quality delivery` (it refuses to overwrite). For variants of one composition (e.g. countdown days), pass `-- --variables '{…}'` with a different `--out` each time, or call `npx hyperframes render --batch` directly.
 2. Run the full `qa.md` checklist on each final. Fix and re-render if anything fails.
 3. Deliver: the MP4 path(s), a short summary, and any required attribution text (e.g. CC BY music) for the user to paste in the video description.
 

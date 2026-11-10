@@ -55,9 +55,22 @@ Record each file in `credits.json`:
 | Music without VO | Main bed. Can be full level within the final target |
 | SFX | Audible but never above the voice. Usually 6–12 dB below VO peaks |
 | Ducking | Attack 50–150 ms, release 300–600 ms, starting just before the first word |
-| Final master | **−14 LUFS integrated**, true peak **≤ −1 dBTP**, 48 kHz stereo AAC |
+| Final master | **−14 LUFS integrated**, 48 kHz stereo. Master WAV true peak **≤ −1.5 dBTP**, so the AAC track in the MP4 stays **≤ −1 dBTP** (AAC encoding raises peaks) |
 
-Mix with `python "<skill>/scripts/mix_audio.py" --plan audio/mix_plan.json --out audio/mix.wav`. The plan lists VO, music and SFX with start times and gains. The script ducks the music under the VO segments and normalizes the master. Then put **only the final mix** in the composition as one `<audio>` element covering the whole duration (copy it into `composition/assets/`). Alternatively, place the individual tracks and let the HyperFrames audio tools in `/media-use` do the mix. Pick one approach per project, never both.
+Mix with `python "<skill>/scripts/mix_audio.py" --plan audio/mix_plan.json --out audio/mix.wav`. The plan lists VO, music and SFX with start times and gains. The script ducks the music under the VO segments and normalizes the master. It checks its own result and corrects it:
+- It measures the real music-to-voice gap during speech and deepens the duck until the gap is at least `music_under_vo_db` − 1 (17 dB by default). Music is never as even as its average level, so one pass often lands short.
+- It encodes the master to AAC, measures the true peak, and turns the master down if the MP4 would pass −1 dBTP.
+
+Then put **only the final mix** in the composition as one `<audio>` element covering the whole duration. Alternatively, place the individual tracks and let the HyperFrames audio tools in `/media-use` do the mix. Pick one approach per project, never both.
+
+**The `<audio>` element.** Copy the mix to `composition/assets/mix.wav` and uncomment the example that every template carries just before the end of `#root`:
+```html
+<audio id="mix" class="clip" src="assets/mix.wav" data-start="0" data-duration="24" data-track-index="9" data-volume="1"></audio>
+```
+- `id` is required: HyperFrames leaves an `<audio>` without an id out of the render, so the video is silent.
+- `src` must be a file inside the composition folder (`assets/…`, no leading `/`). No `crossorigin`.
+- `data-duration` = the film's length. `data-track-index` is any track no visual clip uses. `data-volume="1"` keeps the mixed level.
+- `npm run check` reports `media_missing_id` or `audio_src_not_found` if something is off. After the render, `render.py` prints `audio yes` or `audio NO`.
 
 Plan example (`audio/mix_plan.json`):
 ```json
@@ -67,9 +80,9 @@ Plan example (`audio/mix_plan.json`):
   "sfx": [{ "file": "audio/sfx/whoosh.wav", "start": 2.9, "below_ref_db": 10 }],
   "music_under_vo_db": 18 }
 ```
-The script reports `music_below_voice_db_during_speech`. If it's under 15, raise `music_under_vo_db` and mix again to a new file name.
+The script reports `music_below_voice_db_during_speech`, `music_gap_ok`, `true_peak_db` (the WAV), `aac_true_peak_db` (what the MP4 will carry) and `peak_ok`. If `music_gap_ok` is false after its own correction passes, raise `music_under_vo_db`, or use a calmer passage (`music.offset`) or another track, and mix again to a new file name. `music.gain_db` doesn't help here: with a voiceover, the music is levelled against the voice. A `vo_cut_off_s` value means the voiceover is longer than `duration` and was cut.
 
 ## 5. Check
-- Listen-proxy checks: measure integrated loudness and true peak (`qa.md`). Check that the music level during speech is at least 15 dB below the voice (the script reports it).
+- Listen-proxy checks: measure integrated loudness and true peak **on the rendered MP4** (`qa_check.py`, `qa.md`), not only on the WAV. Check that the music level during speech is at least 15 dB below the voice (the script reports it; it aims for 17).
 - Check every planned SFX cue is present and none is accidentally silent.
 - Be honest: measured numbers aren't a human listen. Tell the user the mix was checked by measurement and suggest they listen once.

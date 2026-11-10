@@ -5,7 +5,7 @@ license: MIT
 compatibility: Needs Claude Code or the Claude desktop app (Cowork) with terminal and file access, Node.js 22+, FFmpeg, Python 3.10+ and the official HyperFrames skills.
 metadata:
   author: robin3317
-  version: 0.2.0-beta
+  version: 0.2.1-beta
   repository: https://github.com/robin3317/motion-studio
 ---
 
@@ -22,14 +22,15 @@ Keep this file as your map. Load a reference file only when the current stage ne
 3. **Licensed audio and assets only.** Every music track, SFX, font, image and clip must have a known source and a licence that permits this use. Record each one in the project's `credits.json` (internal, not delivered).
 4. **The voice must be clear.** Background music always sits low and ducks under any voiceover. The narration must stay intelligible over the full mix. Target levels are in `references/audio.md`.
 5. **Ask before spending money.** Before any paid API call (AI music, AI SFX, TTS, image generation), state what will be called and roughly what it costs, then wait for a yes. This applies in **both** modes.
-6. **Ask before installing.** Run the read-only preflight first. Install tools only with the user's approval (`references/setup.md`).
+6. **Ask before changing the user's computer.** Run the read-only preflight first. On the user's own machine, install tools only with their approval (`references/setup.md`). In a throwaway cloud sandbox (a session container that is deleted afterwards, such as Claude Cowork's cloud workspace) install what the job needs without asking, and log each install in the project's `decisions.md`. If you can't tell which one you are on, ask.
 7. **Never destroy work.** Never overwrite an approved file or a previous render. Each render is a new version: `renders/<project>-v1.mp4`, `-v2`, …
 8. **Frame 0 is the thumbnail.** The hook text or key image is visible at 0 s.
 9. **Respect the language.** Write the script and on-screen text in the language the user asks for, or the language of their brief. Use fonts that render that script correctly (`references/typography-i18n.md`).
+10. **Renders stay in the foreground.** Render with `python scripts/render.py` and wait for it. Never put a render in the background (`&`, `nohup`, a detached task): it dies when the call ends and leaves Chrome running. If it prints `RENDER_INCOMPLETE`, run the same command again; it resumes.
 
 ## Update check (first, once per session)
 
-Run `python scripts/update_check.py` from this skill's folder. It takes under 3 s, checks at most once a day, and prints nothing when offline, snoozed or disabled.
+Run `python scripts/update_check.py` from this skill's folder. It takes a few seconds at most, checks at most once a day, and prints nothing when offline, snoozed or disabled. It asks the GitHub Releases API first and falls back to `raw.githubusercontent.com`, so it also works in sandboxes that block the API.
 - No output, or `UP_TO_DATE`: say nothing and continue.
 - `UPDATE_AVAILABLE <local> <latest> <method>`:
   - **Step-by-step, or mode not chosen yet:** ask once, in a single short question: "motion-studio <latest> is available (you have <local>). **Upgrade now** / **Remind me tomorrow** / **Snooze a week** / **Don't ask again**?"
@@ -42,8 +43,10 @@ Run `python scripts/update_check.py` from this skill's folder. It takes under 3 
 Run `python scripts/preflight.py` from the skill folder, with the video project folder as the working directory. It is read-only and reports Node, FFmpeg, Python packages, HyperFrames CLI and HyperFrames skills.
 - All green → continue.
 - Anything missing → read `references/setup.md` and offer the guided install. Don't start production until the render path works.
+- Read the **HOST** lines and the `reach:` lines too. They say what this machine can't do (few CPU cores, no GPU, blocked sites), so you can plan around it before you start: lighter 3D, site capture on the user's machine, an installed Chrome for rendering.
+- If a HyperFrames skill shows as "bundled with the CLI", the host doesn't list it: read its `SKILL.md` from the path preflight prints.
 
-If the user has no project folder yet, ask where to create it (default: a new folder named after the video, e.g. `acme-promo/`). Create it with `python scripts/new_project.py --name <name> --format <fmt> --duration <s> --lang <code> [--template three-starter|isometric-kinetic] [--install]`; ask before `--install` (it downloads GSAP, Three.js and, for `isometric-kinetic`, its fonts from npm).
+If the user has no project folder yet, ask where to create it (default: a new folder named after the video, e.g. `acme-promo/`). Create it with `python scripts/new_project.py --name <name> --format <fmt> --duration <s> --lang <code> [--template three-starter|isometric-kinetic] [--install]`. `--install` downloads GSAP, Three.js and, for `isometric-kinetic`, its fonts from npm: ask first on the user's machine (rule 6).
 
 ## Step 1: Choose the mode
 
@@ -80,8 +83,8 @@ Full stage details are in `references/workflow.md`. Every video goes through the
 | S3 | Style direction | Choose a style preset, adapt it to the brand, render 2–3 style frames (stills) | `styles/`, `typography-i18n.md` | **G3: Style frames** |
 | S4 | Build | Write the HyperFrames composition scene by scene: registry blocks first, Three.js for 3D. Run `npm run check` and the `craft.md` checklist | `/hyperframes`, `/hyperframes-registry`, `three-d.md`, `craft.md` | – |
 | S5 | Audio | Voiceover (if any), pick music, place SFX on visual events, duck and mix | `audio.md`, `voiceover.md` | – |
-| S6 | Preview cut | Low-res preview with the full audio mix. Check timing and readability | `/hyperframes-cli` skill, `qa.md` | **G4: Preview + audio** |
-| S7 | Final render & QA | Render every requested format, run QA checks, deliver the MP4 | `qa.md` | – |
+| S6 | Preview cut | Draft render (`scripts/render.py`) with the full audio mix. Check timing and readability | `workflow.md`, `qa.md` | **G4: Preview + audio** |
+| S7 | Final render & QA | Render every requested format with `scripts/render.py`, run QA checks, deliver the MP4 | `workflow.md`, `qa.md` | – |
 
 **Gates:** in Step-by-step mode, stop at each gate, show the work in a compact form and wait for approval or changes. In Autopilot, don't stop: write what you decided at each gate into `decisions.md` and keep going.
 
@@ -141,7 +144,10 @@ For more than one format, design for the tallest frame's safe zone first, then r
 - **Website blocks fetching**: ask the user for the key facts and assets, or use screenshots they supply. Never guess the content.
 - **Text overflows** (long words, non-Latin scripts): shorten the copy, reduce type size within the style's limits, or split the line across beats. Re-check the safe zones.
 - **Voice is hard to hear**: lower the music bed, deepen the ducking, and cut SFX that overlap speech. Re-test the mixed preview (`references/audio.md`).
-- **Chrome download blocked on first render**: set `HYPERFRAMES_BROWSER_PATH` to an installed Chrome/Chromium (`references/setup.md`).
+- **Chrome download blocked**: `scripts/render.py` switches to an installed Chrome by itself. For raw `npx hyperframes` commands (`snapshot`, `check`), set `HYPERFRAMES_BROWSER_PATH` to the path preflight prints (`references/setup.md`).
+- **Render is slow or the call times out**: that is what `scripts/render.py` is for. It stops before its `--budget` and prints `RENDER_INCOMPLETE`; run the same command again until `RENDER_DONE`. Never background it (rule 10).
+- **"Composition setup did not finish within 45000ms" with `render --start/--end`**: that render path leaves out `node_modules`, so GSAP and Three.js never load. Don't use `--start/--end`; use `scripts/render.py` for the film and `npx hyperframes snapshot --at` for stills.
+- **The video has no sound**: the composition needs one `<audio>` element with an `id` (without it the track is left out), `class="clip"`, a `src` inside the composition folder, `data-start`, `data-duration`, `data-track-index` and `data-volume`. Every template has a commented example (`references/audio.md`).
 - **Render fails or frames look wrong**: hand the error to the `/hyperframes-cli` skill. Check that every animation is seekable and time-based (`references/three-d.md` for 3D).
 
 ## Bundled scripts (`scripts/`, run with the project folder as working directory)
@@ -149,14 +155,15 @@ For more than one format, design for the tallest frame's safe zone first, then r
 | Script | Does |
 |---|---|
 | `update_check.py` | Checks for a newer motion-studio release (daily, silent offline; `--snooze`, `--never`) |
-| `preflight.py` | Read-only environment check |
+| `preflight.py` | Read-only check of the tools and of the host's limits (CPU, GPU, installed Chrome, reachable sites) |
 | `new_project.py` | Creates the project folder + composition for a format (from `templates/`) |
 | `capture_site.mjs` | Website screenshots per format + `brand.json` (colours, fonts, logo candidates) |
 | `cutout.py` | Product background removal (optional `rembg`) |
 | `find_music.py` | Search Openverse for CC0/CC BY music or SFX and download with a credits entry |
 | `beats.py` | Music BPM + beat times |
 | `procedural_sfx.py` | Licence-free synthesized SFX (whoosh, hit, riser, pop, click…) |
-| `mix_audio.py` | VO + music + SFX mix with ducking, normalized to −14 LUFS / −1 dBTP |
+| `mix_audio.py` | VO + music + SFX mix. Ducks the music and checks the real gap to the voice; masters to −14 LUFS / −1.5 dBTP so the encoded MP4 stays under −1 dBTP |
 | `silence_cuts.py` | EDL that removes long pauses (+ filler ranges) from footage (auto threshold) |
 | `apply_edl.py` | Applies the EDL: cut video + re-timed transcript |
+| `render.py` | Foreground render inside a time budget. Resumes where it stopped; uses an installed Chrome when the download is blocked |
 | `qa_check.py` | Measured checks on a render + contact sheet |

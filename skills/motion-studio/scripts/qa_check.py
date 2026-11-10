@@ -6,7 +6,8 @@ Usage:
                        [--fps 30] [--lufs -14] [--no-audio-ok] [--sheet renders/previews/sheet.png]
 
 Checks: resolution/aspect, fps, duration (±0.1 s), H.264 + yuv420p, AAC audio, integrated loudness
-(±1 LU), true peak (≤ -1 dBTP + 0.2 tolerance), long silences, black frames at start/end
+(±1 LU), true peak of the encoded AAC track (≤ -1 dBTP + 0.2 tolerance; mix_audio.py masters to
+-1.5 dBTP so the encode stays under it), long silences, black frames at start/end
 (a deliberately near-black opening can flag; confirm visually).
 --sheet also writes a contact sheet (2 frames/s) for visual inspection.
 Exit code 0 = all measured checks pass, 1 = something failed.
@@ -18,7 +19,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _common import ffprobe_json, need, run  # noqa: E402
+from _common import ffprobe_json, measure_loudness, need, run  # noqa: E402
 
 FORMATS = {"16:9": (1920, 1080), "9:16": (1080, 1920), "1:1": (1080, 1080), "4:5": (1080, 1350)}
 
@@ -29,12 +30,7 @@ def fps_of(stream):
 
 
 def loudness(path):
-    p = run([need("ffmpeg"), "-hide_banner", "-nostats", "-i", path, "-af", "ebur128=peak=true",
-             "-f", "null", "-"], check=False)
-    tail = p.stderr[p.stderr.rfind("Summary:"):]
-    i = re.search(r"I:\s+(-?[\d.]+) LUFS", tail)
-    tp = re.search(r"Peak:\s+(-?[\d.]+|-inf) dBFS", tail)
-    return (float(i.group(1)) if i else None, float(tp.group(1)) if tp and tp.group(1) != "-inf" else None)
+    return measure_loudness(path)
 
 
 def silences(path, min_len=1.5):
@@ -98,7 +94,9 @@ def main():
         check("audio codec", au.get("codec_name") == "aac", au.get("codec_name"))
         i, tp = loudness(a.video)
         check("loudness", i is not None and abs(i - a.lufs) <= 1.0, f"{i} LUFS (target {a.lufs} ±1)")
-        check("true peak", tp is not None and tp <= -0.8, f"{tp} dBTP (max -1)")
+        check("true peak", tp is not None and tp <= -0.8,
+              f"{tp} dBTP in the encoded file (max -1)" + ("" if tp is None or tp <= -0.8 else
+              ": mix again with scripts/mix_audio.py (it masters to -1.5 dBTP and checks the AAC peak)"))
         gaps = silences(a.video)
         check("no long silences", not gaps, "none" if not gaps else f"silence ≥1.5 s starting at {gaps}")
     else:

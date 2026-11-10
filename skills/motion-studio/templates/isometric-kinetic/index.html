@@ -77,7 +77,12 @@
         <div class="col"><div class="eyebrow" id="e5"></div></div><div class="big"><span id="n5">0</span><span id="n5s"></span></div><div class="sub" id="sub5"></div></section>
       <section id="s6" class="scene paper"><div class="stage" id="st6"></div>
         <div class="end"><div class="brand" id="brand"></div><div class="row"><div class="pill" id="cta"></div><div class="url" id="url"></div></div></div></section>
-      <!-- <audio id="mix" src="assets/mix.wav" data-start="0" data-duration="{{DURATION}}" data-track-index="9"></audio> -->
+      <!-- AUDIO: uncomment once the mix exists. One element = the final mix from scripts/mix_audio.py,
+           copied into this folder as assets/mix.wav (references/audio.md).
+           Every attribute is needed: id (an audio element without an id is left out of the render), class="clip",
+           src (a file inside this folder), data-start, data-duration, data-track-index, data-volume. No crossorigin.
+      <audio id="mix" class="clip" src="assets/mix.wav" data-start="0" data-duration="{{DURATION}}" data-track-index="9" data-volume="1"></audio>
+      -->
     </div>
 
     <script>

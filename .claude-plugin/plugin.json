@@ -1,7 +1,7 @@
 {
   "name": "motion-studio",
   "displayName": "Motion Studio",
-  "version": "0.2.0-beta",
+  "version": "0.2.1-beta",
   "description": "Motion-graphics video director for HyperFrames: company, product, brand and release promos plus footage edits, with Three.js 3D, licensed music, SFX and optional voiceover. Autopilot or step-by-step.",
   "author": { "name": "Robin Rahman (Codeonces)", "url": "https://robinrahman.me" },
   "homepage": "https://github.com/robin3317/motion-studio",

@@ -14,11 +14,20 @@ Plan (all times in seconds, gains in dB; only "duration" is required):
   "music_under_vo_db": 18,     # music sits this far below the voice while speech plays (15-20 recommended)
   "music_open_db": 6,          # music this far below voice level when nobody speaks (intro/outro)
   "duck_attack": 0.1, "duck_release": 0.45, "duck_preroll": 0.12,
-  "target_lufs": -14, "true_peak": -1.0
+  "target_lufs": -14,
+  "true_peak": -1.5,           # ceiling of the master WAV
+  "delivery_true_peak": -1.0   # ceiling after AAC encoding (what the MP4 is checked against)
 }
 Each SFX is scaled so its peak sits `below_ref_db` under the reference peak (voice, or music if no VO).
-The master is normalized with FFmpeg loudnorm (two-pass). Prints a JSON report including the measured
-music-vs-voice gap during speech. Refuses to overwrite --out.
+
+The script checks its own result and corrects it:
+- Ducking: it measures the real music-vs-voice gap during speech. Music is rarely as even as its average
+  level, so the first pass often lands a few dB short. It deepens the duck and measures again until the
+  gap is at least `music_under_vo_db` - 1 (17 dB by default; never accepted below 15).
+- Peaks: the master is normalized with FFmpeg loudnorm (two-pass) to `true_peak`. AAC encoding raises
+  peaks, so the master is then encoded to AAC, measured, and turned down if it would pass
+  `delivery_true_peak` in the final MP4.
+Prints a JSON report with the measured numbers. Refuses to overwrite --out.
 """
 import argparse
 import json
@@ -31,9 +40,10 @@ import tempfile
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _common import db_to_gain, decode_audio, need, write_wav  # noqa: E402
+from _common import db_to_gain, decode_audio, measure_loudness, need, write_wav  # noqa: E402
 
 SR = 48000
+MIN_GAP_FLOOR = 15.0   # the music is never accepted closer to the voice than this
 
 
 def place(track, clip, start):
@@ -115,6 +125,53 @@ def loudnorm(src, dst, lufs, tp):
             "normalization": out.get("normalization_type", "")}
 
 
+def duck(music, mask, vo_t, speech, vo_level, plan):
+    """Level the music against the voice and duck it under speech. Measures the real gap during speech
+    and deepens the duck until it is big enough. Returns (ducked music, measured gap dB, passes)."""
+    under = float(plan.get("music_under_vo_db", 18))
+    open_gap = float(plan.get("music_open_db", 6))
+    min_gap = max(MIN_GAP_FLOOR, under - 1.0)
+    aim = max(under, min_gap)              # a setting below the floor is raised to it
+    level = rms_db(music[music.any(axis=1)]) if music.any() else -120.0
+    env = smooth(mask, plan.get("duck_attack", 0.1), plan.get("duck_release", 0.45))
+    g_open = db_to_gain(vo_level - open_gap - level)
+    vo_speech = rms_db(vo_t[speech])
+    extra, out, gap = 0.0, music, None
+    for n in range(1, 7):
+        g_duck = min(g_open, db_to_gain(vo_level - under - extra - level))
+        out = music * (g_open + (g_duck - g_open) * env)[:, None]
+        under_speech = out[speech]
+        if not under_speech.any():
+            return out, None, n            # no music while anyone speaks
+        gap = vo_speech - rms_db(under_speech)
+        if gap >= min_gap:
+            return out, gap, n
+        extra += (aim - gap) + 0.3         # aim for the asked value, not just the minimum
+    return out, gap, 6
+
+
+def aac_true_peak(wav):
+    """True peak the mix will have after AAC encoding (the MP4's audio codec)."""
+    with tempfile.TemporaryDirectory() as td:
+        m4a = os.path.join(td, "check.m4a")
+        p = subprocess.run([need("ffmpeg"), "-hide_banner", "-v", "error", "-y", "-i", wav, "-c:a", "aac",
+                            "-b:a", "192k", m4a], capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if p.returncode != 0:
+            return None
+        return measure_loudness(m4a)[1]
+
+
+def trim_gain(path, db):
+    """Turn the finished master down by `db` (a plain gain change), in place."""
+    tmp = path + ".trim.wav"
+    p = subprocess.run([need("ffmpeg"), "-hide_banner", "-v", "error", "-y", "-i", path, "-af", f"volume=-{db:.2f}dB",
+                        "-ar", str(SR), "-ac", "2", "-c:a", "pcm_s16le", tmp],
+                       capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if p.returncode != 0:
+        raise SystemExit("peak trim failed:\n" + p.stderr[-800:])
+    os.replace(tmp, path)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--plan", required=True)
@@ -137,9 +194,13 @@ def main():
 
     n = int(round(float(plan["duration"]) * SR))
     vo_t, mu_t, sx_t = (np.zeros((n, 2), dtype=np.float64) for _ in range(3))
+    gap, duck_passes = None, 0
 
+    vo_cut = 0.0
     for v in plan.get("vo", []):
-        place(vo_t, decode_audio(path(v["file"]), SR) * db_to_gain(v.get("gain_db", 0)), v.get("start", 0))
+        clip = decode_audio(path(v["file"]), SR) * db_to_gain(v.get("gain_db", 0))
+        vo_cut = max(vo_cut, v.get("start", 0) + len(clip) / SR - float(plan["duration"]))
+        place(vo_t, clip, v.get("start", 0))
 
     mask = speech_mask(vo_t, plan.get("duck_preroll", 0.12)) if np.any(vo_t) else np.zeros(n)
     speech = mask > 0.5
@@ -162,14 +223,7 @@ def main():
             mus[-fo:] *= np.linspace(1, 0, fo)[:, None]
         place(mu_t, mus, start)
         if vo_level is not None:
-            music_level = rms_db(mu_t[mu_t.any(axis=1)]) if mu_t.any() else -120
-            under = float(plan.get("music_under_vo_db", 18))
-            open_gap = float(plan.get("music_open_db", 6))
-            g_open = db_to_gain(vo_level - open_gap - music_level)
-            g_duck = db_to_gain(vo_level - under - music_level)
-            env = smooth(mask, plan.get("duck_attack", 0.1), plan.get("duck_release", 0.45))
-            gain = g_open + (g_duck - g_open) * env
-            mu_t *= gain[:, None]
+            mu_t, gap, duck_passes = duck(mu_t, mask, vo_t, speech, vo_level, plan)
 
     ref_peak = np.max(np.abs(vo_t)) if np.any(vo_t) else (np.max(np.abs(mu_t)) if np.any(mu_t) else 0.5)
     for s in plan.get("sfx", []):
@@ -184,15 +238,44 @@ def main():
         mix *= 0.98 / pk  # headroom before loudnorm
 
     report = {"out": a.out, "duration": plan["duration"]}
-    if speech.any() and np.any(mu_t):
-        gap = rms_db(vo_t[speech]) - rms_db(mu_t[speech])
+    if gap is not None:
+        under = float(plan.get("music_under_vo_db", 18))
         report["music_below_voice_db_during_speech"] = round(float(gap), 1)
-        report["music_gap_ok"] = bool(gap >= 15.0)
+        report["music_gap_ok"] = bool(gap >= max(MIN_GAP_FLOOR, under - 1.0))
+        report["duck_passes"] = duck_passes
+    target_tp = float(plan.get("true_peak", -1.5))
+    delivery_tp = float(plan.get("delivery_true_peak", -1.0))
     with tempfile.TemporaryDirectory() as td:
         pre = os.path.join(td, "premaster.wav")
         write_wav(pre, mix, SR)
-        report.update(loudnorm(pre, a.out, plan.get("target_lufs", -14), plan.get("true_peak", -1.0)))
+        report.update(loudnorm(pre, a.out, plan.get("target_lufs", -14), target_tp))
+    # Check the result the way it will be delivered: AAC raises peaks. Turn the master down if needed.
+    trimmed = 0.0
+    for _ in range(3):
+        _, wav_tp = measure_loudness(a.out)
+        aac_tp = aac_true_peak(a.out)
+        over = max((wav_tp - target_tp) if wav_tp is not None else 0.0,
+                   (aac_tp - delivery_tp) if aac_tp is not None else 0.0)
+        if over <= 0.05:
+            break
+        trim_gain(a.out, over + 0.1)
+        trimmed += over + 0.1
+    lufs, wav_tp = measure_loudness(a.out)
+    aac_tp = aac_true_peak(a.out)
+    report.update({"integrated_lufs": lufs, "true_peak_db": wav_tp, "aac_true_peak_db": aac_tp,
+                   "peak_trim_db": round(trimmed, 2),
+                   "peak_ok": bool(aac_tp is not None and aac_tp <= delivery_tp + 0.05)})
+    if vo_cut > 0.05:
+        report["vo_cut_off_s"] = round(vo_cut, 2)
     print(json.dumps(report, indent=2))
+    if report.get("music_gap_ok") is False:
+        print("WARNING: the music is still too close to the voice. Raise music_under_vo_db, or use a calmer "
+              "passage of the track (music.offset) or another track, then mix again to a new file name. "
+              "(music.gain_db doesn't help: with a voiceover the music is levelled against the voice.)",
+              file=sys.stderr)
+    if vo_cut > 0.05:
+        print(f"WARNING: the voiceover runs {vo_cut:.2f} s past \"duration\" and was cut off there. "
+              "Make the film longer or start the voiceover earlier.", file=sys.stderr)
 
 
 if __name__ == "__main__":

@@ -3,21 +3,26 @@
 
 Usage (run at skill start, any working directory):
     python update_check.py              # prints one status line (or nothing)
-    python update_check.py --force      # ignore the throttle and snooze, check now
+    python update_check.py --force      # ignore the throttle and snooze, check now; never silent
+    python update_check.py --notes      # print the changelog entries newer than the installed version
     python update_check.py --snooze 1d  # remind later: 1d, 7d (or Nh)
     python update_check.py --never      # never check again (undo with --reset)
     python update_check.py --reset      # clear snooze/never and the cache
     python update_check.py --json       # machine-readable status
 
 Output (first word is the status):
-    UPDATE_AVAILABLE <local> <latest> <method>     then lines:  COMMAND: ...  /  NOTES: <release url>
+    UPDATE_AVAILABLE <local> <latest> <method>     then lines:  COMMAND: ...  /  NOTES: <url>
     UP_TO_DATE <local>
+    CHECK_FAILED <why>                            only with --force or --json: no source could be reached
     (nothing)                                     when disabled, snoozed, offline or the check failed
 
-What it does: reads the installed version from SKILL.md, asks GitHub for the newest release of
-robin3317/motion-studio (pre-releases included), at most once every 24 h (cached), 3 s timeout.
-It sends nothing about the user. Disable with MOTION_STUDIO_NO_UPDATE_CHECK=1.
-State lives in ~/.cache/motion-studio/update-state.json.
+What it does: reads the installed version from SKILL.md and asks for the newest version of
+robin3317/motion-studio, at most once every 24 h (cached). It tries two sources in order:
+  1. GitHub Releases API (pre-releases included)
+  2. raw.githubusercontent.com: .claude-plugin/plugin.json on main (same version as the latest release)
+Source 2 exists because some sandboxes (e.g. Claude Cowork's cloud) block api.github.com but allow
+raw.githubusercontent.com. Each request has a 3 s timeout. It sends nothing about the user.
+Disable with MOTION_STUDIO_NO_UPDATE_CHECK=1. State lives in ~/.cache/motion-studio/update-state.json.
 """
 import argparse
 import json
@@ -25,17 +30,29 @@ import os
 import re
 import sys
 import time
+import urllib.error
 import urllib.request
+
+for _stream in (sys.stdout, sys.stderr):  # Windows pipes use a legacy code page: "→" in the notes would crash
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:  # noqa: BLE001
+        pass
 
 REPO = "robin3317/motion-studio"
 MARKETPLACE = "codeonces"
 PLUGIN = "motion-studio"
+RAW = f"https://raw.githubusercontent.com/{REPO}/main"
 API = os.environ.get("MOTION_STUDIO_RELEASES_URL", f"https://api.github.com/repos/{REPO}/releases?per_page=10")
+MANIFEST = os.environ.get("MOTION_STUDIO_MANIFEST_URL", f"{RAW}/.claude-plugin/plugin.json")
+CHANGELOG = os.environ.get("MOTION_STUDIO_CHANGELOG_URL", f"{RAW}/CHANGELOG.md")
+CHANGELOG_PAGE = f"https://github.com/{REPO}/blob/main/CHANGELOG.md"
 HERE = os.path.dirname(os.path.abspath(__file__))
 SKILL_DIR = os.path.dirname(HERE)
 STATE_DIR = os.path.join(os.path.expanduser("~"), ".cache", "motion-studio")
 STATE = os.path.join(STATE_DIR, "update-state.json")
 THROTTLE = 24 * 3600
+TIMEOUT = 3
 
 
 def local_version():
@@ -81,15 +98,22 @@ def save_state(st):
         pass
 
 
-def fetch_latest():
-    if API.startswith("file://"):
-        with open(API[7:], encoding="utf-8") as f:
-            rels = json.load(f)
-    else:
-        req = urllib.request.Request(API, headers={"User-Agent": "motion-studio-update-check",
-                                                   "Accept": "application/vnd.github+json"})
-        with urllib.request.urlopen(req, timeout=3) as r:
-            rels = json.loads(r.read().decode("utf-8"))
+def get_text(url, accept="*/*"):
+    """Fetch a URL (or a file:// path, used by the tests) as text."""
+    if url.startswith("file://"):
+        path = url[7:]
+        if re.match(r"^/[A-Za-z]:", path):  # file:///C:/...
+            path = path[1:]
+        with open(path, encoding="utf-8-sig") as f:
+            return f.read()
+    req = urllib.request.Request(url, headers={"User-Agent": "motion-studio-update-check", "Accept": accept})
+    with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+        return r.read().decode("utf-8-sig")
+
+
+def from_releases():
+    """Newest published release (pre-releases included), or None if the repo has none."""
+    rels = json.loads(get_text(API, "application/vnd.github+json"))
     best = None
     for rel in rels:
         if rel.get("draft"):
@@ -98,8 +122,54 @@ def fetch_latest():
         if not re.match(r"^v?\d+\.\d+", tag):
             continue
         if best is None or newer(tag, best["tag"]):
-            best = {"tag": tag, "url": rel.get("html_url"), "name": rel.get("name") or tag}
+            best = {"tag": tag, "url": rel.get("html_url"), "name": rel.get("name") or tag, "source": "releases"}
     return best
+
+
+def from_manifest():
+    """Version in .claude-plugin/plugin.json on main. It changes only in the release commit."""
+    version = str(json.loads(get_text(MANIFEST)).get("version") or "")
+    if not re.match(r"^\d+\.\d+", version):
+        raise ValueError("no version in plugin.json")
+    return {"tag": "v" + version, "url": CHANGELOG_PAGE, "name": "v" + version, "source": "manifest"}
+
+
+def why(exc):
+    if isinstance(exc, urllib.error.HTTPError):
+        return f"HTTP {exc.code}"
+    if isinstance(exc, urllib.error.URLError):
+        return f"unreachable ({exc.reason})"
+    return exc.__class__.__name__
+
+
+def fetch_latest():
+    """Try each source in order. Returns (latest or None, [reasons the earlier sources failed])."""
+    errors = []
+    for name, fn in (("releases", from_releases), ("manifest", from_manifest)):
+        try:
+            latest = fn()
+        except Exception as exc:  # noqa: BLE001  offline, blocked, rate-limited, repo moved
+            errors.append(f"{name}: {why(exc)}")
+            continue
+        if latest:
+            return latest, errors
+        errors.append(f"{name}: no published release")
+    return None, errors
+
+
+def notes_since(local):
+    """Changelog sections for versions newer than `local` (newest first), as text. '' if none."""
+    text = get_text(CHANGELOG)
+    out, keep = [], False
+    for line in text.splitlines():
+        m = re.match(r"^##\s+v?(\d+\.\d+[^\s:(]*)", line)
+        if m:
+            keep = newer(m.group(1), local)
+        elif line.startswith("# "):
+            continue
+        if keep:
+            out.append(line)
+    return "\n".join(out).strip()
 
 
 def install_method():
@@ -119,6 +189,7 @@ def install_method():
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--force", action="store_true")
+    ap.add_argument("--notes", action="store_true")
     ap.add_argument("--snooze")
     ap.add_argument("--never", action="store_true")
     ap.add_argument("--reset", action="store_true")
@@ -146,21 +217,34 @@ def main():
         print(f"update reminder snoozed for {a.snooze}")
         return
 
+    local = local_version()
+    if a.notes:
+        if not local:
+            sys.exit("NOTES_UNAVAILABLE installed version not found in SKILL.md")
+        try:
+            text = notes_since(local)
+        except Exception as exc:  # noqa: BLE001
+            sys.exit(f"NOTES_UNAVAILABLE {why(exc)} (read {CHANGELOG_PAGE} instead)")
+        print(text or f"No changelog entries newer than {local}.")
+        return
+
     if os.environ.get("MOTION_STUDIO_NO_UPDATE_CHECK") and not a.force:
         return
     if st.get("never") and not a.force:
         return
     if st.get("snooze_until", 0) > now and not a.force:
         return
-
-    local = local_version()
     if not local:
         return
+
     latest = st.get("latest") if (now - st.get("checked_at", 0) < THROTTLE and not a.force) else None
     if latest is None:
-        try:
-            latest = fetch_latest()
-        except Exception:  # offline, rate-limited, repo moved: stay silent
+        latest, errors = fetch_latest()
+        if latest is None and errors:  # nothing reachable: stay silent unless asked directly
+            if a.json:
+                print(json.dumps({"status": "CHECK_FAILED", "local": local, "errors": errors}, indent=2))
+            elif a.force:
+                print("CHECK_FAILED " + "; ".join(errors))
             return
         st.update({"checked_at": now, "latest": latest})
         save_state(st)
@@ -171,7 +255,8 @@ def main():
     status = "UPDATE_AVAILABLE" if newer(latest["tag"], local) else "UP_TO_DATE"
     if a.json:
         print(json.dumps({"status": status, "local": local, "latest": latest["tag"].lstrip("vV"),
-                          "method": method, "command": cmd, "notes": latest.get("url")}, indent=2))
+                          "method": method, "command": cmd, "notes": latest.get("url"),
+                          "source": latest.get("source", "releases")}, indent=2))
         return
     if status == "UP_TO_DATE":
         print(f"UP_TO_DATE {local}")

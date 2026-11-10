@@ -23,9 +23,11 @@ import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+from _common import HF_VERSION  # noqa: E402  (the HyperFrames version each new project pins)
+
 SKILL = os.path.dirname(HERE)
 TEMPLATES = os.path.join(SKILL, "templates")
-HF_VERSION = "0.9.23"  # version this skill release was tested with; upgrade per HyperFrames docs
 
 FORMATS = {
     #        w     h    safeL  safeR  top    bottom headline body

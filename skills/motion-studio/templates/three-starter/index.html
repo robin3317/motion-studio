@@ -28,6 +28,12 @@
     <div id="root" data-composition-id="main" data-start="0" data-duration="{{DURATION}}" data-width="{{WIDTH}}" data-height="{{HEIGHT}}">
       <canvas id="gl" class="clip" data-start="0" data-duration="{{DURATION}}" data-track-index="0"></canvas>
       <div id="tagline" class="clip" data-start="0" data-duration="{{DURATION}}" data-track-index="1">Your tagline here</div>
+      <!-- AUDIO: uncomment once the mix exists. One element = the final mix from scripts/mix_audio.py,
+           copied into this folder as assets/mix.wav (references/audio.md).
+           Every attribute is needed: id (an audio element without an id is left out of the render), class="clip",
+           src (a file inside this folder), data-start, data-duration, data-track-index, data-volume. No crossorigin.
+      <audio id="mix" class="clip" src="assets/mix.wav" data-start="0" data-duration="{{DURATION}}" data-track-index="9" data-volume="1"></audio>
+      -->
     </div>
 
     <script>
@@ -65,8 +71,10 @@
       renderer.setPixelRatio(1);
       renderer.setSize(W, H, false);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.0;
+      // Neutral tone mapping keeps brand colours true. ACES Filmic washes out saturated colours
+      // (a lime logo turns pale yellow). See references/three-d.md, "Look".
+      renderer.toneMapping = THREE.NeutralToneMapping;
+      renderer.toneMappingExposure = 0.95;
 
       const scene = new THREE.Scene();
       scene.background = new THREE.Color(css.getPropertyValue("--bg").trim() || "#07080c");

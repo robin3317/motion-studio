@@ -7,7 +7,13 @@ python "<skill>/scripts/preflight.py"
 ```
 `<skill>` = the folder that contains this skill's SKILL.md. Quote paths that contain spaces. On some systems Python is `python3` or `py`.
 
-Preflight reports: OS, Node version, npm/npx, FFmpeg/ffprobe, Python version and packages, HyperFrames CLI reachability, HyperFrames skills, and optional tools. It installs nothing and never prints secret values.
+Preflight reports: OS, Node version, npm/npx, FFmpeg/ffprobe, Python version and packages, the HyperFrames CLI versions already on disk, HyperFrames skills, and optional tools. It installs nothing and never prints secret values.
+
+It also reports the host's limits, so you can plan around them:
+- **HOST line:** CPU cores, memory and whether a GPU was found. With 4 cores or fewer, or no GPU, renders are slow: keep previews at draft quality and 3D scenes light.
+- **Installed Chrome:** the browser `render.py` falls back to when HyperFrames can't download its own.
+- **`reach:` lines:** six one-byte requests (3 s timeout, in parallel; skip with `--no-net`) to npm, the Chrome download host, the GitHub API, raw GitHub, a Hugging Face model file and the open web. Each blocked line says what to do instead.
+- **Skills "bundled with the CLI":** the HyperFrames CLI ships its three skills in `dist/skills`. If the host doesn't list `/hyperframes`, read the `SKILL.md` at the path preflight prints.
 
 ## 2. Requirements
 
@@ -22,7 +28,9 @@ Preflight reports: OS, Node version, npm/npx, FFmpeg/ffprobe, Python version and
 | Docker | Pixel-identical renders across machines | Optional |
 
 ## 3. Guided install
-Ask once, listing exactly what's missing and the commands you'll run. Install only after the user says yes, and only what's missing.
+**On the user's own computer:** ask once, listing exactly what's missing and the commands you'll run. Install only after the user says yes, and only what's missing.
+
+**In a throwaway cloud sandbox** (a session container that is deleted afterwards, such as Claude Cowork's cloud workspace): install what the job needs without asking, and add one line per install to the project's `decisions.md` (what, why, the command). Nothing there outlives the session, so there is nothing of the user's to change. If you can't tell whether you are on the user's machine, ask.
 
 **Node.js 22+**
 - Windows: `winget install OpenJS.NodeJS.LTS`
@@ -44,9 +52,12 @@ python -m pip install -r "<skill>/scripts/requirements.txt"
 - Standalone: `npx hyperframes skills update` (installs or refreshes the core set). `npx skills add heygen-com/hyperframes` also works.
 - New skills load in a **new session**. If preflight can't find them but the host lists `/hyperframes` among its available skills, treat them as installed.
 
-**HyperFrames CLI**: runs through `npx hyperframes …`. No global install needed; the first run downloads it. Each project pins an exact version in its `package.json` (this skill was tested with 0.9.23). To move up, run `npx hyperframes@latest upgrade --project . --check` first.
+**HyperFrames CLI**: runs through `npx hyperframes …`. No global install needed; the first run downloads it. Each project pins an exact version in its `package.json` (this skill was tested with 0.9.26; projects made with 0.9.23 keep working). To move up, run `npx hyperframes@latest upgrade --project . --check` first.
 
-**Chrome for rendering**: HyperFrames downloads `chrome-headless-shell` on first render (`npx hyperframes browser ensure`). If that download is blocked, point it at an installed Chrome/Chromium with the `HYPERFRAMES_BROWSER_PATH` environment variable. `npx hyperframes doctor` shows what it found.
+**Chrome for rendering**: HyperFrames downloads `chrome-headless-shell` on first render (`npx hyperframes browser ensure`). If that download is blocked:
+- `scripts/render.py` notices, finds an installed Chrome, Chromium or Edge, and uses it. Nothing to set.
+- Raw commands (`npx hyperframes snapshot`, `check`, `render`) need the `HYPERFRAMES_BROWSER_PATH` environment variable set to that browser. Preflight prints the exact line. `npx hyperframes doctor` shows what HyperFrames found.
+An installed Chrome uses the slower screenshot capture path. That is fine for correctness.
 
 **Project libraries**: compositions load GSAP and Three.js from the project's `node_modules` (no CDN at render time). `python "<skill>/scripts/new_project.py" ... --install` runs `npm install` for them. Ask first; it downloads from npm.
 
@@ -58,8 +69,10 @@ python -m pip install -r "<skill>/scripts/requirements.txt"
 After installing, scaffold a throwaway project and render it:
 ```
 python "<skill>/scripts/new_project.py" --name smoke-test --format 16:9 --duration 6 --install
-cd smoke-test/composition && npm run check && npx hyperframes render -q draft -o ../renders/previews/smoke.mp4
-``` Delete nothing the user owns. If it fails, hand the error to `/hyperframes-cli` and report plainly.
+cd smoke-test/composition && npm run check && cd ..
+python "<skill>/scripts/render.py" --out renders/previews/smoke.mp4 --quality draft
+```
+Delete nothing the user owns. If it fails, hand the error to `/hyperframes-cli` and report plainly.
 
 ## Notes
 - Never change system-wide settings or shared environments without asking.

@@ -23,6 +23,12 @@ import sys
 import urllib.parse
 import urllib.request
 
+for _stream in (sys.stdout, sys.stderr):  # track titles and artist names are often non-ASCII
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:  # noqa: BLE001
+        pass
+
 API = "https://api.openverse.org/v1/audio/"
 UA = "motion-studio-skill/0.1 (+https://github.com/robin3317/motion-studio)"
 SAFE = {"cc0": "cc0", "pdm": "pdm", "by": "by"}

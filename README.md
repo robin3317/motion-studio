@@ -71,7 +71,7 @@ npx skills add robin3317/motion-studio
 ```
 
 **Claude desktop / Cowork (ZIP upload)**
-1. Download `motion-studio-skill-v0.2.0-beta.zip` (the newest version) from [Releases](https://github.com/robin3317/motion-studio/releases).
+1. Download `motion-studio-skill-v0.2.1-beta.zip` (the newest version) from [Releases](https://github.com/robin3317/motion-studio/releases).
 2. In Claude, open **Settings → Capabilities → Skills**, click **Upload skill**, and choose the ZIP.
 
 **Manual**
@@ -85,7 +85,7 @@ Or, in Claude Code: `claude plugin marketplace add heygen-com/hyperframes` then 
 
 ## Updating
 
-motion-studio checks for a new release at most **once a day** when it starts. It stays silent when offline and sends nothing about you. When a new version is out, it asks: **Upgrade now / Remind me tomorrow / Snooze a week / Don't ask again**.
+motion-studio checks for a new release at most **once a day** when it starts. It stays silent when offline and sends nothing about you. It also works where the GitHub API is blocked (for example in Claude Cowork's cloud): it then reads the version from `raw.githubusercontent.com`. When a new version is out, it asks: **Upgrade now / Remind me tomorrow / Snooze a week / Don't ask again**.
 
 To upgrade at any time, say **"upgrade motion-studio"** (plugin users: `/motion-studio:motion-studio-upgrade`), or by hand:
 
@@ -115,6 +115,8 @@ brief & facts → script & storyboard → style frames → build (HyperFrames + 
 → audio (VO, music, SFX, ducking) → preview → final render → QA checks → MP4
 ```
 
+**Slow or locked-down machines** (for example Claude Cowork's cloud: 2 CPU cores, no GPU, most sites blocked) are supported: the preflight reports the limits up front, and `scripts/render.py` renders in foreground calls that resume where the last one stopped.
+
 `skills/motion-studio/SKILL.md` is the entry point. Detailed guides live in `references/` and load only when needed. Scripts are in `scripts/`, project starters in `templates/`, and audio in `assets/audio/`.
 
 ## Licences and credits
@@ -129,11 +131,11 @@ brief & facts → script & storyboard → style frames → build (HyperFrames + 
 
 This is a beta and feedback shapes v0.2. After you try it, please [open a feedback issue](https://github.com/robin3317/motion-studio/issues/new?template=feedback.yml) (it takes 2 minutes) or message me directly. Most useful: your prompt, OS, what broke, and how the video looked.
 
-## Known limitations (v0.2.0-beta)
+## Known limitations (v0.2.1-beta)
 
 - v0.2 adds Isometric Kinetic and shared craft rules. The older presets still look plainer than it does; continuous-camera "launch film" motion (morphs, motion blur) is planned next.
 - The Isometric Kinetic template is tested with music only. Headlines synced to a voiceover, in 9:16, still need real-world testing.
-- Tested end to end on Linux. Windows and macOS reports are very welcome.
+- Tested on Linux and Windows (all templates build, render and pass QA). Stopping and resuming a long render is untested on Windows, and nothing is tested on macOS: reports are very welcome.
 - Product background removal (`rembg`) is untested.
 
 ---

@@ -4,7 +4,7 @@ description: Upgrades the motion-studio video skill to its latest release and sh
 license: MIT
 metadata:
   author: robin3317
-  version: 0.2.0-beta
+  version: 0.2.1-beta
 ---
 
 # Upgrade motion-studio
@@ -14,11 +14,11 @@ The check script lives in the main skill: `<skills>/motion-studio/scripts/update
 ## 1. Check
 Run `python "<skills>/motion-studio/scripts/update_check.py" --force`.
 - `UP_TO_DATE x`: tell the user they have the latest version (x) and stop.
-- No output: GitHub couldn't be reached. Say so, and give the releases page https://github.com/robin3317/motion-studio/releases. Stop.
 - `UPDATE_AVAILABLE <local> <latest> <method>`: continue.
+- `CHECK_FAILED <why>`: neither GitHub source could be reached from here (the line says why). If the session runs in a cloud sandbox and the user's computer is linked, run the same command on their computer. Otherwise say so and give the releases page https://github.com/robin3317/motion-studio/releases. Stop.
 
 ## 2. Show what's new
-Open the `NOTES:` URL (the GitHub release page) and summarise the changes in 3–5 bullets. If it can't be fetched, skip this step.
+Run `python "<skills>/motion-studio/scripts/update_check.py" --notes`. It prints the changelog entries that are newer than the installed version. Summarise them in 3–5 bullets. If it prints `NOTES_UNAVAILABLE`, open the `NOTES:` URL instead, or skip this step.
 
 ## 3. Upgrade by install method
 Ask once: "Upgrade motion-studio from <local> to <latest> now?" Run the commands only after the user says yes.

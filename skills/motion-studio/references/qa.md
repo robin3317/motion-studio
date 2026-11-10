@@ -7,13 +7,16 @@ Inside the composition: `npm run check`. It covers lint, runtime errors, layout,
 - `line_unread` warnings on **speech-synced captions** are expected: captions follow the speaker's pace. Keep caption groups to 5 words or fewer and ignore those warnings. Fix them for any other text.
 - The check can't see inside WebGL/3D canvases, so overlaps there only show up in stills.
 - `npx hyperframes snapshot --at <times>` writes full-size frames plus a contact sheet. The contact sheet is compressed and small details can mislead: zoom into the full-size frame before you call something a bug.
+- The check is read-only for your files. It writes only its reports, under `.hyperframes/` in the composition (tested with HyperFrames 0.9.23, 0.9.26 and 0.9.28, including runs that reported errors). If `index.html` changed, something else changed it.
+- On a machine without a GPU, a 3D scene adds `console_warning … GPU stall due to ReadPixels` lines. They describe the host, not the composition: ignore them.
+- Don't check a time range with `npx hyperframes render --start/--end`: that path leaves out `node_modules`, so these templates fail with "Composition setup did not finish within 45000ms". Use `snapshot --at` for stills and `scripts/render.py` for video.
 
 ## 1. Technical (measured)
 Run `python "<skill>/scripts/qa_check.py" renders/<file>.mp4 --expect-format 9:16 --expect-duration 24`. It checks:
 - Resolution and aspect match the requested format
 - fps (default 30) and duration (±0.1 s of the plan)
 - Codec: H.264 video, AAC audio, yuv420p (plays everywhere)
-- Loudness: integrated ≈ −14 LUFS (±1), true peak ≤ −1 dBTP
+- Loudness: integrated ≈ −14 LUFS (±1), true peak ≤ −1 dBTP. Both are measured on the MP4's AAC track, which peaks higher than the WAV it was made from. If the peak fails, mix again with `mix_audio.py` (it masters to −1.5 dBTP and checks the AAC peak)
 - No silent gaps where audio is expected. No digital clipping
 
 Manual equivalents:
