@@ -52,6 +52,19 @@ You don't need to check these yourself. The skill runs a read-only check first a
 
 ## Install
 
+> ## **IMPORTANT: Claude Code and the Claude desktop app (Cowork) are two separate places**
+>
+> **Installing motion-studio in one does NOT add it to the other, even on the same computer with the same account.**
+>
+> **Install it once in every place where you want to use it:**
+>
+> | **You want to use it in…** | **Install it with…** |
+> |---|---|
+> | **Claude Code** (terminal or IDE) | **the plugin steps below** |
+> | **Claude desktop app / Cowork** | **the ZIP upload below** |
+>
+> **If motion-studio is "missing", you are in the place where it was not installed yet. Updates are separate too: update it in each place.**
+
 **Easiest: let Claude do it (Claude Code)**
 Paste this into Claude Code:
 ```
@@ -84,6 +97,8 @@ npx hyperframes skills update
 Or, in Claude Code: `claude plugin marketplace add heygen-com/hyperframes` then `claude plugin install hyperframes@hyperframes`. Start a new session afterwards.
 
 ## Updating
+
+**Each place updates by itself.** Updating motion-studio in Claude Code does not update it in the Claude desktop app (Cowork), and the other way round.
 
 motion-studio checks for a new release at most **once a day** when it starts. It stays silent when offline and sends nothing about you. It also works where the GitHub API is blocked (for example in Claude Cowork's cloud): it then reads the version from `raw.githubusercontent.com`. When a new version is out, it asks: **Upgrade now / Remind me tomorrow / Snooze a week / Don't ask again**.
 
