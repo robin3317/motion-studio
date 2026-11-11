@@ -16,6 +16,8 @@
 
       /* BRAND TOKENS: replace from style.md. dark / paper / solid is the background rhythm. */
       :root {
+        /* Component tokens: one scale for every tag and pill (references/craft.md, "Components"). */
+        --r-sm: 10px; --r-pill: 999px; --border-w: 2px;
         --dark: #121419; --dark-2: #1c2029; --paper: #f2f0eb; --solid: #5b3df5;
         --ink-on-dark: #f2f0eb; --ink-on-light: #121419; --ink-on-solid: #ffffff;
         --accent-on-dark: #a48bff; --accent-on-light: #4b2fe0;
@@ -38,7 +40,7 @@
       .hl .line { display: block; overflow: hidden; padding-bottom: 0.08em; white-space: nowrap; }
       .hl .li { display: inline-block; }
       .hl b { font-weight: 700; color: var(--acc); }
-      .tag { position: absolute; font: 700 28px/1 var(--font-mono); letter-spacing: .04em; padding: 10px 16px; border-radius: 10px; border: 2px solid var(--line); background: #fff; color: var(--line); white-space: nowrap; }
+      .tag { position: absolute; font: 700 28px/1 var(--font-mono); letter-spacing: .04em; padding: 10px 16px; border-radius: var(--r-sm); border: var(--border-w) solid var(--line); background: #fff; color: var(--line); white-space: nowrap; }
       .tag.hot { background: var(--accent-on-dark); }
       .cap { position: absolute; font: 600 32px/1.2 var(--font-sans); text-align: center; width: 420px; }
       .cap small { display: block; font: 500 24px/1.4 var(--font-mono); letter-spacing: .1em; opacity: .6; margin-bottom: 8px; }
@@ -47,7 +49,7 @@
       .end { position: absolute; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 36px; }
       .end .brand { font: 700 150px/1 var(--font-sans); letter-spacing: -0.03em; }
       .end .row { display: flex; gap: 28px; align-items: center; }
-      .end .pill { font: 700 50px/1 var(--font-sans); background: var(--ink-on-light); color: var(--paper); padding: 22px 54px; border-radius: 999px; }
+      .end .pill { font: 700 50px/1 var(--font-sans); background: var(--ink-on-light); color: var(--paper); padding: 22px 54px; border-radius: var(--r-pill); white-space: nowrap; }
       .end .url { font: 500 34px/1 var(--font-mono); }
       .hud { position: absolute; display: flex; justify-content: space-between; font: 500 20px/1.5 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; z-index: 50; }
       .hud-l { display: flex; align-items: center; gap: 12px; }

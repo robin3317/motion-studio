@@ -17,7 +17,7 @@ Without the GitHub CLI: create the repo on github.com, then run `git remote add 
 
 ## Later releases
 1. Bump the version in `.claude-plugin/plugin.json` and the SKILL.md `metadata.version`. Add a CHANGELOG entry.
-2. Rebuild the ZIPs into `dist/` (skill ZIP = the `motion-studio/` folder; plugin ZIP = the repo without dist/, tests/renders/, docs/_references-bundle.md).
+2. Run the tests, then `python tests/regression.py --record`, then `python tests/build_release.py`. It checks that the three version numbers agree and writes both ZIPs into `dist/` (skill ZIP = the `motion-studio/` folder; plugin ZIP = the repo without dist/, tests/renders/, docs/_references-bundle.md). Write `dist/release-notes-vX.Y.Z.md`.
 3. Commit, tag `vX.Y.Z`, push, then run `gh release create`.
 Plugin users update with `/plugin marketplace update codeonces`.
 
@@ -43,6 +43,20 @@ git push origin v0.2.1-beta
 gh release create v0.2.1-beta dist\motion-studio-skill-v0.2.1-beta.zip dist\motion-studio-plugin-v0.2.1-beta.zip --prerelease --title "motion-studio v0.2.1-beta" --notes-file dist\release-notes-v0.2.1-beta.md
 ```
 
+### Example: v0.3.0-beta
+```powershell
+python tests\test_update_check.py
+python tests\test_visual_audit.py
+python tests\regression.py --record
+python tests\build_release.py
+git add -A
+git commit -m "motion-studio v0.3.0-beta"
+git push origin main
+git tag v0.3.0-beta
+git push origin v0.3.0-beta
+gh release create v0.3.0-beta dist\motion-studio-skill-v0.3.0-beta.zip dist\motion-studio-plugin-v0.3.0-beta.zip --prerelease --title "motion-studio v0.3.0-beta" --notes-file dist\release-notes-v0.3.0-beta.md
+```
+
 ## How users get notified
 `skills/motion-studio/scripts/update_check.py` compares the installed `metadata.version` in SKILL.md with the newest version it can find. It tries two sources, in order:
 1. The GitHub **Releases** API of robin3317/motion-studio (pre-releases included).
@@ -58,9 +72,15 @@ So every release needs:
 
 Timing: a successful check is cached for 24 h per machine, so users can see a new release up to a day late. `python update_check.py --force` checks at once.
 
-## Before each release: test the update check
+## Before each release: tests and the release checks file
+Bump the version first (step 1 of "Later releases"), because the regression records its result under the version in `plugin.json`.
 ```powershell
 python tests\test_update_check.py
+python tests\test_visual_audit.py
+python tests\regression.py --record
 $env:MS_LIVE_TESTS = "1"; python tests\test_update_check.py
 ```
-Run the live test on your machine **and** in a Claude Cowork cloud session (ask Claude to run it there). It must report a `source`: `releases` on a normal machine, `manifest` where the API is blocked. If both fail in the cloud, users there get no update popup.
+- Run `regression.py --record` on your machine **and** in a Claude Cowork cloud session (ask Claude to run it there and send back `tests/RELEASE_CHECKS.json`). Each machine adds its own entry under `automated`. It needs `numpy`, Node and FFmpeg; it says so up front if one is missing.
+- The live update test must report a `source`: `releases` on a normal machine, `manifest` where the API is blocked. If both fail in the cloud, users there get no update popup.
+- Go through `tests/acceptance.md` and `tests/triggers.md` by hand, as far as you have time, and write what you ran under `manual` in `tests/RELEASE_CHECKS.json`. Write "not run" for the rest.
+- Update the `not_tested` list in `tests/RELEASE_CHECKS.json` by hand: remove what this release tested, add new gaps. Copy the list into the release notes. An honest "not tested" list is part of the release.

@@ -149,3 +149,84 @@ def find_browser():
         if c and os.path.isfile(c):
             return c
     return None
+
+
+# ---------- HyperFrames helpers shared by render.py, preview_sheet.py and visual_audit.py ----------
+
+def composition_dir(arg=None):
+    """Absolute path of the composition folder: --composition, ./composition, or . if it has index.html."""
+    comp = os.path.abspath(arg or ("composition" if os.path.isdir("composition") else "."))
+    if not os.path.isfile(os.path.join(comp, "index.html")):
+        sys.exit(f"[motion-studio] no index.html in {comp} (run from the project folder or pass --composition)")
+    return comp
+
+
+def pinned_hf_version(comp):
+    """HyperFrames version pinned in the composition's package.json, else this skill's tested version."""
+    import re
+    try:
+        with open(os.path.join(comp, "package.json"), encoding="utf-8") as f:
+            m = re.search(r"hyperframes@(\d+\.\d+\.\d+)", f.read())
+        return m.group(1) if m else HF_VERSION
+    except OSError:
+        return HF_VERSION
+
+
+def hf_run(comp, args, timeout=None):
+    """Run `npx hyperframes@<pinned> <args>` inside the composition, in the foreground.
+    Uses an installed Chrome when HyperFrames reports it can't find one. Returns (exit code, stdout, stderr)."""
+    npx = need("npx")
+    cmd = [npx, "--yes", f"hyperframes@{pinned_hf_version(comp)}"] + [str(a) for a in args]
+    env = dict(os.environ)
+    for attempt in (1, 2):
+        p = subprocess.run(cmd, cwd=comp, env=env, capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=timeout, stdin=subprocess.DEVNULL)
+        if attempt == 1 and p.returncode != 0 and "Chrome not found" in (p.stdout + p.stderr) \
+                and not env.get("HYPERFRAMES_BROWSER_PATH") and find_browser():
+            env["HYPERFRAMES_BROWSER_PATH"] = find_browser()
+            continue
+        break
+    return p.returncode, p.stdout, p.stderr
+
+
+def json_from(text):
+    """The first JSON object in a command's output (HyperFrames prints notices around it)."""
+    start = text.find("{")
+    if start < 0:
+        return None
+    try:
+        return json.JSONDecoder().raw_decode(text[start:])[0]
+    except ValueError:
+        return None
+
+
+def new_check_dir(project, name):
+    """A new, empty folder renders/checks/<name>-vN in the project. Never reuses or clears an old one."""
+    base = os.path.join(project, "renders", "checks")
+    n = 1
+    while os.path.exists(os.path.join(base, f"{name}-v{n}")):
+        n += 1
+    path = os.path.join(base, f"{name}-v{n}")
+    os.makedirs(path)
+    return path
+
+
+def storyboard_scenes(project):
+    """[(id, start, duration)] from storyboard.json, [] if it has none."""
+    try:
+        with open(os.path.join(project, "storyboard.json"), encoding="utf-8-sig") as f:
+            scenes = json.load(f).get("scenes", [])
+        return [(str(s.get("id", f"s{i + 1}")), float(s["start"]), float(s["duration"]))
+                for i, s in enumerate(scenes) if "start" in s and "duration" in s]
+    except (OSError, ValueError, TypeError, KeyError):
+        return []
+
+
+def film_seconds(comp):
+    import re
+    try:
+        with open(os.path.join(comp, "index.html"), encoding="utf-8") as f:
+            m = re.search(r'data-composition-id="[^"]*"[^>]*\bdata-duration="([\d.]+)"', f.read())
+        return float(m.group(1)) if m else None
+    except (OSError, ValueError):
+        return None

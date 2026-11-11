@@ -14,7 +14,8 @@ Allowed stops (only these):
 2. **Paid API calls.** State the service, what it will generate, the quantity and the approximate cost, then wait.
 
 Everything else is decided by you:
-- Playbook, style preset, structure, copy, shots, music track, SFX, pacing.
+- Playbook, style preset, structure, copy, shots, music track, SFX, pacing, fonts.
+- 2D or 3D: **3D**, unless the user said 2D or flat, named a 2D style, or the job is a footage edit (`three-d.md`). Never ask; say it in one line in the final message ("Built in 3D. Say '2D' if you want it flat").
 - Facts: use only facts taken directly from the user's input or the source website, each recorded in `facts.json` with its URL. Omit anything you can't source.
 - Music: choose a licensed track that matches the playbook mood and pacing (see `audio.md`). Free sources first. Never call a paid music API without asking.
 - Voiceover: if the user gave none and didn't ask for one, make the video **without** voiceover (music + SFX + on-screen text). Free local TTS is allowed only if the user asked for a voiceover.

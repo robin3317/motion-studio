@@ -1,0 +1,160 @@
+{
+  "version": "0.3.0-beta",
+  "automated": [
+    {
+      "host": "Linux 6.18.44-fc-v338 (x86_64), 2 cores",
+      "date": "2026-11-11",
+      "python": "3.13.18",
+      "node": "v22.23.4",
+      "hyperframes": "0.9.26",
+      "quality": "draft",
+      "result": "all passed",
+      "rows": [
+        {
+          "template": "starter",
+          "format": "16:9",
+          "ok": true,
+          "failed_steps": [],
+          "qa": "-14.1 LUFS (target -14.0 ±1); -1.4 dBTP in the encoded file (max -1)"
+        },
+        {
+          "template": "starter",
+          "format": "9:16",
+          "ok": true,
+          "failed_steps": [],
+          "qa": "-14.1 LUFS (target -14.0 ±1); -1.4 dBTP in the encoded file (max -1)"
+        },
+        {
+          "template": "three-starter",
+          "format": "16:9",
+          "ok": true,
+          "failed_steps": [],
+          "qa": "-14.1 LUFS (target -14.0 ±1); -1.4 dBTP in the encoded file (max -1)"
+        },
+        {
+          "template": "three-starter",
+          "format": "9:16",
+          "ok": true,
+          "failed_steps": [],
+          "qa": "-14.1 LUFS (target -14.0 ±1); -1.4 dBTP in the encoded file (max -1)"
+        },
+        {
+          "template": "isometric-kinetic",
+          "format": "16:9",
+          "ok": true,
+          "failed_steps": [],
+          "qa": "-14.2 LUFS (target -14.0 ±1); -1.4 dBTP in the encoded file (max -1)"
+        },
+        {
+          "template": "isometric-kinetic",
+          "format": "9:16",
+          "ok": true,
+          "failed_steps": [],
+          "qa": "-14.2 LUFS (target -14.0 ±1); -1.4 dBTP in the encoded file (max -1)"
+        },
+        {
+          "template": "tools",
+          "format": "default 3D, fonts, reference",
+          "ok": true,
+          "failed_steps": [],
+          "qa": ""
+        },
+        {
+          "template": "three-starter",
+          "format": "resume test",
+          "ok": true,
+          "failed_steps": [],
+          "qa": "12 s, all frames"
+        }
+      ],
+      "resume_after_budget_stop": "tested, works"
+    },
+    {
+      "host": "Windows 11 (AMD64), 8 cores",
+      "date": "2026-11-11",
+      "python": "3.13.7",
+      "node": "v22.19.0",
+      "hyperframes": "0.9.26",
+      "quality": "draft",
+      "result": "all passed",
+      "rows": [
+        {
+          "template": "starter",
+          "format": "16:9",
+          "ok": true,
+          "failed_steps": [],
+          "qa": "-14.1 LUFS (target -14.0 ±1); -1.4 dBTP in the encoded file (max -1)"
+        },
+        {
+          "template": "starter",
+          "format": "9:16",
+          "ok": true,
+          "failed_steps": [],
+          "qa": "-14.1 LUFS (target -14.0 ±1); -1.4 dBTP in the encoded file (max -1)"
+        },
+        {
+          "template": "three-starter",
+          "format": "16:9",
+          "ok": true,
+          "failed_steps": [],
+          "qa": "-14.1 LUFS (target -14.0 ±1); -1.4 dBTP in the encoded file (max -1)"
+        },
+        {
+          "template": "three-starter",
+          "format": "9:16",
+          "ok": true,
+          "failed_steps": [],
+          "qa": "-14.1 LUFS (target -14.0 ±1); -1.4 dBTP in the encoded file (max -1)"
+        },
+        {
+          "template": "isometric-kinetic",
+          "format": "16:9",
+          "ok": true,
+          "failed_steps": [],
+          "qa": "-14.2 LUFS (target -14.0 ±1); -1.4 dBTP in the encoded file (max -1)"
+        },
+        {
+          "template": "isometric-kinetic",
+          "format": "9:16",
+          "ok": true,
+          "failed_steps": [],
+          "qa": "-14.2 LUFS (target -14.0 ±1); -1.4 dBTP in the encoded file (max -1)"
+        },
+        {
+          "template": "tools",
+          "format": "default 3D, fonts, reference",
+          "ok": true,
+          "failed_steps": [],
+          "qa": ""
+        },
+        {
+          "template": "three-starter",
+          "format": "resume test",
+          "ok": true,
+          "failed_steps": [],
+          "qa": "12 s, all frames"
+        }
+      ],
+      "resume_after_budget_stop": "tested, works"
+    }
+  ],
+  "manual": {
+    "acceptance prompts (tests/acceptance.md)": "not run",
+    "trigger prompts (tests/triggers.md)": "not run since 0.1.0-beta (20/20 then)"
+  },
+  "not_tested": [
+    "macOS: nothing has run there",
+    "The acceptance prompts and the trigger prompts (see manual): the skill's behaviour in a real chat, including the new 3D default, is unproven",
+    "A real project made with the new 3D starter from brief to MP4: only the template with placeholder text was rendered",
+    "The Optimizely project from the first outside test run: not available, so its card-border complaint was fixed by rule and template, not re-checked on that film",
+    "3D: a bloom pass, GLB product models, 2.5D product planes, and a logo SVG other than the placeholder",
+    "labelTexture() and a CSS-tilted card: checked by eye on one still each, Latin text only",
+    "get_font.py on Windows and on the user's machine behind a proxy; fonts from outside @fontsource (Fontshare and others) are a manual step",
+    "analyze_ref.py on a real reference film (tested on a synthetic clip with known cuts and on our own render) and on files over a few minutes",
+    "Windows: a render stopped by the real budget timer on a long film (the regression stops it through a test hook that uses the same stop code), and the installed-Chrome fallback",
+    "A real voiceover through mix_audio.py: the duck correction was tested with a synthetic voice",
+    "visual_audit.py on compositions built from HyperFrames sub-compositions or registry blocks, and its text-centring measurement on non-Latin scripts",
+    "Product background removal (rembg)",
+    "A folder where files can't be deleted (Cowork-linked folders): HyperFrames' own cleanup of its segment cache there"
+  ]
+}

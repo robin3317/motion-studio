@@ -52,7 +52,7 @@ from _common import HF_VERSION, find_browser, which  # noqa: E402
 WIN = os.name == "nt"
 STATE_DIR = os.path.join(os.path.expanduser("~"), ".cache", "motion-studio", "render")
 MIN_SEGMENT_FRAMES = 30          # HyperFrames' minimum
-STOP_MARGIN = 20 if WIN else 15  # seconds kept free at the end of the budget for a clean stop
+STOP_MARGIN = 15                 # seconds kept free at the end of the budget for a clean stop
 LAST_MOMENT = 10                 # once every frame is captured, assembly may use the margin up to this point
 SKIP_DIRS = {"node_modules", "renders", ".hyperframes", ".git", "__pycache__"}
 STOP_NOW = False                 # set by SIGTERM/SIGINT: stop the render and report progress
@@ -255,6 +255,10 @@ class Run:
         self.children = {}
         self.began = time.time()
         self.first_frame_at = None   # when capture started: everything before it is start-up
+        # Test hook (tests/regression.py): stop once this many frames are SAVED in finished segments,
+        # whatever the machine's speed or worker count. `saved` is set by main().
+        self.stop_after = int(os.environ.get("MS_RENDER_STOP_AFTER_SAVED_FRAMES") or 0)
+        self.saved = lambda: 0
 
     def _reader(self, pipe, q):
         try:
@@ -358,6 +362,10 @@ class Run:
                     last_print = now
                     sp = self.speed()
                     print(f"[render] {self.done}/{self.total} frames" + (f", {sp:.1f} fps" if sp else ""), flush=True)
+                if not self.stopped_for_budget and self.stop_after and self.done < self.total \
+                        and self.saved() >= self.stop_after:
+                    self._stop(proc)
+                    stopped_at = time.time()
                 if not self.stopped_for_budget and (STOP_NOW or self.deadline):
                     captured_all = self.total and self.done >= self.total
                     limit = (self.deadline + ((STOP_MARGIN - LAST_MOMENT) if captured_all else 0)) if self.deadline else 0
@@ -494,6 +502,7 @@ def main():
               f"call {st['calls']}" + (f", {before} frames already saved" if before else ""), flush=True)
 
     run = Run(cmd, env, comp, log_path, deadline, st, st_path, a.json)
+    run.saved = lambda: saved_frames(comp, seg)[0]
     code = run.go()
     text = "\n".join(run.tail)
     if code != 0 and not run.stopped_for_budget and "Chrome not found" in text and not env.get("HYPERFRAMES_BROWSER_PATH"):
@@ -506,6 +515,7 @@ def main():
         if not a.json:
             print(f"[render] Chrome download blocked: using the installed browser at {found}", flush=True)
         run = Run(cmd, env, comp, log_path, deadline, st, st_path, a.json)
+        run.saved = lambda: saved_frames(comp, seg)[0]
         code = run.go()
         text = "\n".join(run.tail)
 
@@ -559,27 +569,28 @@ def main():
         st["stalled"] = 0 if gained > 0 else int(st.get("stalled", 0)) + 1
         hint = ""
         if gained <= 0:
-            if not run.segmented and run.total:
-                if workers != "1":
-                    st["single_worker"] = True
-                    hint = ("No segment was saved: with several workers HyperFrames can't save partial work. "
-                            "The next call uses 1 worker.")
-                else:
-                    need = int(run.total / fps * 1.3 + 60) if fps else None
-                    hint = ("No segment was saved: this composition renders on a HyperFrames route that can't be "
-                            "resumed (e.g. shader transitions). It has to finish in one call"
-                            + (f": about {need} s. Run again with --budget {need} and a tool time limit above that."
-                               if need else ". Raise --budget."))
+            if workers != "1":
+                # Several workers render several segments at once, so a short call can end with none finished.
+                st["single_worker"] = True
+                hint = ("No segment was finished in this call: with several workers, several segments are in work "
+                        "at once and none was complete yet. The next call uses 1 worker, which finishes them "
+                        "one after another.")
+            elif run.total and not run.segmented:
+                need = int(run.total / fps * 1.3 + 60) if fps else None
+                hint = ("No segment was saved: this composition renders on a HyperFrames route that can't be "
+                        "resumed (e.g. shader transitions). It has to finish in one call"
+                        + (f": about {need} s. Run again with --budget {need} and a tool time limit above that."
+                           if need else ". Raise --budget."))
+            elif not run.total:
+                hint = ("No frame was captured: the budget ended during start-up. Run again with --budget 120 or "
+                        "more (and a tool time limit above it).")
             else:
-                startup = (run.first_frame_at - run.began) if run.first_frame_at else None
-                if fps and startup is not None:
-                    need = int(startup + 2 * seg / fps + STOP_MARGIN + 15)
-                    hint = (f"No segment finished in this call: start-up takes about {startup:.0f} s here and one "
-                            f"{seg}-frame segment about {seg / fps:.0f} s. Run again with --budget {max(need, 60)} "
-                            f"or more (and a tool time limit above it).")
-                else:
-                    hint = ("No segment finished in this call: the budget ended during start-up. Run again with "
-                            "--budget 120 or more (and a tool time limit above it).")
+                startup = (run.first_frame_at - run.began) if run.first_frame_at else 0
+                per = seg / fps if fps else None
+                need = int(startup + 2 * per + STOP_MARGIN + 15) if per else 120
+                hint = (f"No segment finished in this call (start-up about {startup:.0f} s"
+                        + (f", one {seg}-frame segment about {per:.0f} s" if per else "")
+                        + f"). Run again with --budget {max(need, 60)} or more (and a tool time limit above it).")
         save_state(st_path, st)
         left = max(0, total - done)
         eta = int(left / fps) if fps and total else None

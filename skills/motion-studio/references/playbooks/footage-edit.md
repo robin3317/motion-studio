@@ -5,6 +5,8 @@
 
 Never modify the original files. All edits produce new files in the project.
 
+**This playbook is 2D:** create the project with `--template starter`. The footage is the picture; 3D is used only if the user asks for a 3D title or logo sting.
+
 ## 1. Intake
 `data-gathering.md` §4: probe every clip, then get the transcript (the user's SRT/VTT, or `npx hyperframes transcribe <file> --language <code>`). **Read and fix the transcript**: names, terms, numbers. Speech recognition mishears names: in testing it wrote "Edmies" for a speaker's surname. Confirm a speaker's name with the user before it goes in a caption or lower third (in Step-by-step at G1; in Autopilot in the one essentials batch).
 

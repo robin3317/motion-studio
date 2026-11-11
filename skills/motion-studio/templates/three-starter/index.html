@@ -1,9 +1,11 @@
 <!doctype html>
-<html lang="{{LANG}}" data-format="{{FORMAT}}">
+<html lang="{{LANG}}" data-format="{{FORMAT}}" data-quality="{{QUALITY}}">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width={{WIDTH}}, height={{HEIGHT}}" />
-    <!-- motion-studio 3D starter: seek-safe Three.js logo reveal. See references/three-d.md. -->
+    <!-- motion-studio 3D starter (the default template): one 3D stage under three HTML text scenes.
+         The 3D object moves between layout poses, so it never sits behind the text.
+         See references/three-d.md. data-quality: "cpu" (no GPU) or "standard". -->
     <script src="node_modules/gsap/dist/gsap.min.js"></script>
     <script type="importmap">
       { "imports": {
@@ -12,37 +14,124 @@
       } }
     </script>
     <style>
-      :root { --bg: #07080c; --ink: #f5f7fa; --accent: #3b82f6; --font-body: "Inter", system-ui, sans-serif; }
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      html, body { width: {{WIDTH}}px; height: {{HEIGHT}}px; overflow: hidden; background: var(--bg); }
-      #root { position: relative; width: 100%; height: 100%; overflow: hidden; }
-      #gl { position: absolute; inset: 0; width: 100%; height: 100%; }
-      /* Text stays in HTML so any language/script shapes correctly. */
-      #tagline {
-        position: absolute; left: {{SAFE_LEFT}}; right: {{SAFE_RIGHT}}; bottom: calc({{SAFE_BOTTOM}} + 4%);
-        text-align: center; color: var(--ink); font: 600 {{BODY_PX}}px/1.3 var(--font-body); opacity: 0;
+      /* Fonts come from npm (@fontsource, OFL) and load from disk. Swap them with scripts/get_font.py
+         (references/typography-i18n.md). For non-Latin text add a @font-face with the SAME family
+         name and a unicode-range. */
+      @font-face { font-family: "Display"; src: url("node_modules/@fontsource/space-grotesk/files/space-grotesk-latin-700-normal.woff2") format("woff2"); font-weight: 700; }
+      @font-face { font-family: "Body"; src: url("node_modules/@fontsource/manrope/files/manrope-latin-500-normal.woff2") format("woff2"); font-weight: 500; }
+      @font-face { font-family: "Body"; src: url("node_modules/@fontsource/manrope/files/manrope-latin-700-normal.woff2") format("woff2"); font-weight: 700; }
+
+      /* Design tokens: fill from style.md (preset + brand). */
+      :root {
+        --bg: #07080c;
+        --ink: #f5f7fa;
+        --muted: #9aa4b2;
+        --accent: #3b82f6;
+        --on-accent: #ffffff;
+        --surface: #141922;
+        --line: rgba(255, 255, 255, 0.18);
+        --font-display: "Display", system-ui, sans-serif;
+        --font-body: "Body", system-ui, sans-serif;
+        /* Component tokens: ONE scale for every pill, tag, card and button (references/craft.md). */
+        --r-sm: 12px;
+        --r-card: 28px;
+        --r-pill: 999px;
+        --border-w: 2px;
+        --pad-x: 1.05em;
+        --pad-y: 0.62em;
+        --pad-card: 1.1em;
+        --w: {{WIDTH}}px;
+        --h: {{HEIGHT}}px;
+        --safe-left: {{SAFE_LEFT}};
+        --safe-right: {{SAFE_RIGHT}};
+        --safe-top: {{SAFE_TOP}};
+        --safe-bottom: {{SAFE_BOTTOM}};
       }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: var(--w); height: var(--h); overflow: hidden; background: var(--bg); }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; color: var(--ink); font-family: var(--font-body); font-weight: 500; }
+      #gl { position: absolute; inset: 0; width: 100%; height: 100%; }
+      .scene { position: absolute; inset: 0; visibility: hidden; }
+      /* Text zone = the safe zone, text at the bottom: the 3D object owns the upper part. */
+      .safe {
+        position: absolute;
+        left: var(--safe-left); right: var(--safe-right);
+        top: var(--safe-top); bottom: var(--safe-bottom);
+        display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
+        text-align: center; gap: calc({{BODY_PX}}px * 0.5); padding-bottom: 2.5%;
+      }
+      /* Wide frames: text on the right half, the 3D object on the left. */
+      html[data-format="16:9"] .safe.side { left: 50%; justify-content: center; align-items: flex-start; text-align: left; padding-bottom: 0; }
+      .headline { font-family: var(--font-display); font-weight: 700; font-size: {{HEADLINE_PX}}px; line-height: 1.05; letter-spacing: -0.01em; }
+      .support { font-size: {{BODY_PX}}px; color: var(--muted); line-height: 1.35; }
+      .accent { color: var(--accent); }
+      .word { display: inline-block; }
+
+      /* Components. Rules that keep them clean at any size:
+         - one line (nowrap), padding from the tokens, never a fixed width
+         - the border is an inset shadow: it can't be clipped and doesn't change the size
+         - text-box trims the line to the capitals, so equal padding centres the letters by eye */
+      .pill, .tag, .btn {
+        display: inline-block; padding: var(--pad-y) var(--pad-x); border-radius: var(--r-pill);
+        font-family: var(--font-body); font-weight: 700; font-size: {{BODY_PX}}px; line-height: 1; white-space: nowrap;
+        text-box: trim-both cap alphabetic;
+        color: var(--ink); background: var(--surface); box-shadow: inset 0 0 0 var(--border-w) var(--line);
+      }
+      .btn { background: var(--accent); color: var(--on-accent); box-shadow: none; }
+      .tag { border-radius: var(--r-sm); font-size: calc({{BODY_PX}}px * 0.62); letter-spacing: 0.04em; }
+      .card {
+        border-radius: var(--r-card); padding: var(--pad-card); background: var(--surface);
+        box-shadow: inset 0 0 0 var(--border-w) var(--line); overflow: hidden;
+      }
+      /* A label pinned to a 3D object: positioned from JavaScript (pin() in lib/ms3d.js). */
+      .pinned { position: absolute; left: 0; top: 0; }
+      /* Safe-zone guides for style-frame checks only. Add class "show-guides" to <html> temporarily. Never render finals with it. */
+      #guides { display: none; position: absolute; left: var(--safe-left); right: var(--safe-right); top: var(--safe-top); bottom: var(--safe-bottom); outline: 3px dashed rgba(255, 0, 80, 0.8); pointer-events: none; }
+      html.show-guides #guides { display: block; }
     </style>
   </head>
   <body>
     <div id="root" data-composition-id="main" data-start="0" data-duration="{{DURATION}}" data-width="{{WIDTH}}" data-height="{{HEIGHT}}">
       <canvas id="gl" class="clip" data-start="0" data-duration="{{DURATION}}" data-track-index="0"></canvas>
-      <div id="tagline" class="clip" data-start="0" data-duration="{{DURATION}}" data-track-index="1">Your tagline here</div>
+      <!-- S1 hook: the object rises in, the hook is readable at frame 0 -->
+      <section id="s1" class="scene">
+        <div class="safe">
+          <h1 class="headline"><span class="word">Your</span> <span class="word">bold</span> <span class="word accent">hook</span></h1>
+        </div>
+      </section>
+      <!-- S2 middle beat: the object moves aside, small parts orbit it, a label is pinned to it -->
+      <section id="s2" class="scene">
+        <div class="safe side">
+          <h2 class="headline">One clear idea</h2>
+          <p class="support">A short supporting line</p>
+        </div>
+        <span id="callout" class="tag pinned">Label</span>
+      </section>
+      <!-- S3 CTA: the object rests about 10° off-axis above the end card -->
+      <section id="s3" class="scene">
+        <div class="safe">
+          <h2 class="headline">Brand</h2>
+          <span class="btn">Call to action</span>
+          <p class="support">example.com</p>
+        </div>
+      </section>
       <!-- AUDIO: uncomment once the mix exists. One element = the final mix from scripts/mix_audio.py,
            copied into this folder as assets/mix.wav (references/audio.md).
            Every attribute is needed: id (an audio element without an id is left out of the render), class="clip",
            src (a file inside this folder), data-start, data-duration, data-track-index, data-volume. No crossorigin.
       <audio id="mix" class="clip" src="assets/mix.wav" data-start="0" data-duration="{{DURATION}}" data-track-index="9" data-volume="1"></audio>
       -->
+      <div id="guides"></div>
     </div>
 
     <script>
-      // Host: one linear GSAP clock drives render(t). Frames may be requested in any order,
-      // so the 3D state must be a pure function of t.
+      // One paused master timeline. A linear clock on it drives the 3D: frames may be requested in
+      // any order, so the 3D state must be a pure function of t (references/three-d.md).
       (function () {
         const root = document.getElementById("root");
-        const duration = parseFloat(root.dataset.duration) || 4;
-        const host = { t: 0, duration: duration, render: null };
+        const duration = parseFloat(root.dataset.duration) || 8;
+        const S2 = 3, S3 = {{CTA_START}};
+        const host = { t: 0, duration: duration, cuts: [0, S2, S3], render: null };
         window.__ms3d = host;
         window.__hf = window.__hf || {};
         window.__hf.buildReady = window.__hf.buildReady || {};
@@ -51,105 +140,34 @@
         const tl = gsap.timeline({ paused: true });
         tl.to(host, { t: duration, duration: duration, ease: "none",
           onUpdate: () => { if (host.render) host.render(host.t); } }, 0);
-        tl.fromTo("#tagline", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, Math.min(2.2, duration * 0.55));
+
+        // Scene visibility at absolute times (seek-safe).
+        tl.set("#s1", { autoAlpha: 1 }, 0).set("#s1", { autoAlpha: 0 }, S2);
+        tl.set("#s2", { autoAlpha: 1 }, S2).set("#s2", { autoAlpha: 0 }, S3);
+        tl.set("#s3", { autoAlpha: 1 }, S3);
+
+        // S1: readable at frame 0 (the social thumbnail), then it settles and the accent word pops.
+        tl.fromTo("#s1 .word", { y: 18, scale: 1.04 }, { y: 0, scale: 1, duration: 0.6, ease: "expo.out", stagger: 0.08 }, 0);
+        tl.fromTo("#s1 .accent", { color: "var(--ink)" }, { color: "var(--accent)", duration: 0.25 }, 0.6);
+        tl.to("#s1 .safe", { opacity: 0, y: -30, duration: 0.3, ease: "power2.in" }, S2 - 0.3);
+
+        // S2: headline, support line, then the pinned label.
+        tl.from("#s2 .headline", { y: 40, opacity: 0, duration: 0.5, ease: "power3.out" }, S2 + 0.25);
+        tl.from("#s2 .support", { y: 24, opacity: 0, duration: 0.5, ease: "power3.out" }, S2 + 0.45);
+        tl.fromTo("#callout", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, S2 + 0.9);
+        tl.to("#s2 .safe, #callout", { opacity: 0, duration: 0.3, ease: "power2.in" }, S3 - 0.3);
+
+        // S3: end card. It holds at least 2 s with nothing moving but the object's slow float.
+        tl.from("#s3 .headline", { scale: 0.92, opacity: 0, duration: 0.5, ease: "back.out(1.4)" }, S3 + 0.15);
+        tl.from("#s3 .btn", { y: 30, opacity: 0, duration: 0.45, ease: "power3.out" }, S3 + 0.45);
+        tl.from("#s3 .support", { opacity: 0, duration: 0.4 }, S3 + 0.7);
+
         window.__timelines = window.__timelines || {};
         window.__timelines["main"] = tl;
       })();
     </script>
 
-    <script type="module">
-      import * as THREE from "three";
-      import { SVGLoader } from "three/addons/loaders/SVGLoader.js";
-      import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
-
-      const host = window.__ms3d;
-      const W = {{WIDTH}}, H = {{HEIGHT}};
-      const css = getComputedStyle(document.documentElement);
-      const accent = new THREE.Color(css.getPropertyValue("--accent").trim() || "#3b82f6");
-
-      const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById("gl"), antialias: true, alpha: false, preserveDrawingBuffer: true });
-      renderer.setPixelRatio(1);
-      renderer.setSize(W, H, false);
-      renderer.outputColorSpace = THREE.SRGBColorSpace;
-      // Neutral tone mapping keeps brand colours true. ACES Filmic washes out saturated colours
-      // (a lime logo turns pale yellow). See references/three-d.md, "Look".
-      renderer.toneMapping = THREE.NeutralToneMapping;
-      renderer.toneMappingExposure = 0.95;
-
-      const scene = new THREE.Scene();
-      scene.background = new THREE.Color(css.getPropertyValue("--bg").trim() || "#07080c");
-      const pmrem = new THREE.PMREMGenerator(renderer);
-      scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-
-      const camera = new THREE.PerspectiveCamera(W > H ? 32 : 45, W / H, 0.1, 100);
-
-      const key = new THREE.DirectionalLight(0xffffff, 1.1); key.position.set(3, 4, 5); scene.add(key);
-      const rim = new THREE.DirectionalLight(accent, 2.2); rim.position.set(-4, 1, -3); scene.add(rim);
-
-      // Seeded RNG (mulberry32): deterministic "random" values, generated once.
-      function rng(seed) { return function () { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
-      const rand = rng(7);
-
-      // Dust particles from the seeded field.
-      const N = 300, pos = new Float32Array(N * 3), base = [];
-      for (let i = 0; i < N; i++) { base.push([(rand() - 0.5) * 12, (rand() - 0.5) * 8, (rand() - 0.5) * 6 - 2, rand() * Math.PI * 2]); }
-      const dustGeo = new THREE.BufferGeometry(); dustGeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-      const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.02, transparent: true, opacity: 0.35 }));
-      scene.add(dust);
-
-      const clamp01 = (x) => Math.min(1, Math.max(0, x));
-      const easeInOutCubic = (x) => { x = clamp01(x); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
-      const easeOutExpo = (x) => { x = clamp01(x); return x === 1 ? 1 : 1 - Math.pow(2, -10 * x); };
-
-      const logo = new THREE.Group(); scene.add(logo);
-
-      new SVGLoader().load("assets/logo.svg", (data) => {
-        // Each SVG path keeps its own fill colour (multi-colour logos); paths without a fill use --accent.
-        // Later paths sit slightly in front so overlapping layers don't z-fight.
-        data.paths.forEach((p, i) => {
-          const fill = p.userData && p.userData.style && p.userData.style.fill;
-          const color = fill && fill !== "none" ? new THREE.Color().setStyle(fill) : accent;
-          const mat = new THREE.MeshStandardMaterial({ color, metalness: 0.55, roughness: 0.32 });
-          SVGLoader.createShapes(p).forEach((shape) => {
-            const geo = new THREE.ExtrudeGeometry(shape, { depth: 24, bevelEnabled: true, bevelThickness: 4, bevelSize: 3, bevelSegments: 4, curveSegments: 24 });
-            geo.translate(0, 0, i * 6);
-            logo.add(new THREE.Mesh(geo, mat));
-          });
-        });
-        // Center and normalize: SVG y axis points down.
-        const box = new THREE.Box3().setFromObject(logo);
-        const size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());
-        logo.children.forEach((m) => m.geometry.translate(-center.x, -center.y, -center.z));
-        const s = 2.2 / Math.max(size.x, size.y);
-        logo.scale.set(s, -s, s);
-
-        host.render = (t) => {
-          const D = host.duration;
-          // Camera arc 35° → 0°, slight dolly-in.
-          const u = easeInOutCubic(t / (D * 0.7));
-          const ang = THREE.MathUtils.degToRad(35 * (1 - u));
-          const dist = (W > H ? 6.2 : 7.8) - 0.8 * u;
-          camera.position.set(Math.sin(ang) * dist, 0.6 * (1 - u) + 0.15, Math.cos(ang) * dist);
-          camera.lookAt(0, 0.1, 0);
-          // Logo rises in and settles.
-          const r = easeOutExpo(t / 1.2);
-          logo.position.y = -1.2 * (1 - r) + 0.25;
-          logo.rotation.y = (1 - r) * -0.6;
-          // Rim light sweep.
-          rim.position.x = -4 + 8 * easeInOutCubic((t - 0.8) / 1.4);
-          // Dust drifts analytically from t.
-          for (let i = 0; i < N; i++) {
-            const b = base[i];
-            pos[i * 3] = b[0] + Math.sin(t * 0.3 + b[3]) * 0.2;
-            pos[i * 3 + 1] = b[1] + t * 0.08;
-            pos[i * 3 + 2] = b[2];
-          }
-          dustGeo.attributes.position.needsUpdate = true;
-          renderer.render(scene, camera);
-        };
-        host.render(host.t);
-        host.ready();
-      });
-    </script>
+    <!-- The 3D stage: lib/stage.js draws it, lib/ms3d.js holds the helpers (poses, pinned labels, glow, label textures). -->
+    <script type="module" src="lib/stage.js"></script>
   </body>
 </html>

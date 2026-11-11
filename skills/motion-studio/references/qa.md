@@ -25,8 +25,15 @@ ffprobe -v error -show_entries stream=codec_name,width,height,r_frame_rate,pix_f
 ffmpeg -i file.mp4 -af ebur128=peak=true -f null -
 ```
 
-## 2. Visual (inspect stills)
-Make a contact sheet: `ffmpeg -i file.mp4 -vf "fps=2,scale=480:-1,tile=6x5" -frames:v 1 renders/previews/sheet.png`, then **look at it**. Also extract full-size stills at each scene's midpoint.
+## 2. Visual (measure, then look)
+Run `python "<skill>/scripts/visual_audit.py"` from the project folder (fill `storyboard.json` first: it samples each scene's midpoint and the closing frame). It writes a new folder `renders/checks/audit-vN/` with `audit.md`, one labelled contact sheet of the scenes, and a numbered sheet of every pill, tag, card and button enlarged.
+- **Errors and warnings** come from HyperFrames' check (overflow, overlap, contrast, lint) and from the component measurements: `label_wrapped`, `text_overflow`, `text_off_centre_vertical`, `cut_by_frame`, `text_over_3d`. Fix them all.
+- **Review items** (`text_off_centre_horizontal`, `tight_padding`, `inconsistent_class`, light `text_over_3d`) are candidates. Open the crop and decide.
+- **Then look at both sheets yourself.** The measurements can't judge whether a border, a radius or the spacing looks right. If a component isn't measured, add its selector: `--selectors ".stat,.chip"`, or mark it with `data-audit`.
+- Need a closer look? `python "<skill>/scripts/preview_sheet.py" --scene s3 --zoom ".card"` crops one element at 3× density across the scene. For a whole move: the same command without `--zoom`.
+- After the render, a quick sheet of the MP4 itself: `python "<skill>/scripts/qa_check.py" <file> --sheet renders/checks/final-sheet.png`.
+
+Check, on the sheets:
 - [ ] Every text block is readable, inside the safe zone, and on screen long enough (≥ 0.4 s/word + 0.5 s)
 - [ ] No overlaps, clipping, cut-off words or stray elements
 - [ ] Complex scripts render correctly (no tofu boxes, conjuncts intact)
@@ -34,6 +41,7 @@ Make a contact sheet: `ffmpeg -i file.mp4 -vf "fps=2,scale=480:-1,tile=6x5" -fra
 - [ ] The product looks like the real product (no AI image used without consent)
 - [ ] Transitions are clean: no flash frames, no blank frames at the start or end
 - [ ] The CTA and closing line are on screen for ≥ 2 s at the end
+- [ ] Every rule in `style.md` → Feedback rules holds in every scene, not only the one that was fixed
 
 ## 3. Content
 - [ ] Every claim on screen or in the VO exists in `facts.json`, with its source
@@ -49,5 +57,9 @@ Make a contact sheet: `ffmpeg -i file.mp4 -vf "fps=2,scale=480:-1,tile=6x5" -fra
 - [ ] Every asset is in `credits.json` with a licence that allows this use
 - [ ] Attribution text is ready for the user if any licence needs it (CC BY)
 
-## Independent review (recommended)
-If the host supports subagents, give a fresh subagent the final MP4's contact sheet, stills, `brief.md`, `facts.json` and this checklist, and ask it to find problems. Fix real issues before delivering. The producer shouldn't be the only reviewer.
+## Independent review (before every final render)
+The producer shouldn't be the only reviewer: you already believe the video is fine. If the host can start a subagent, do this before the final render, every time:
+1. Give a fresh subagent only the evidence, not your opinion: the newest `renders/checks/audit-vN/` folder (`audit.md` and both sheets), `brief.md`, `facts.json`, the feedback rules from `style.md`, and this checklist.
+2. Ask it to list concrete problems with the time and the element, and to say what it could not judge.
+3. Fix the real ones, run `visual_audit.py` again, then render.
+No subagents on this host: do the same pass yourself from the sheets alone, in a separate step after a break in the work, and say in the delivery message that the review was not independent.
