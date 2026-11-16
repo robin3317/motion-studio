@@ -136,6 +136,74 @@
         }
       ],
       "resume_after_budget_stop": "tested, works"
+    },
+    {
+      "host": "Darwin 24.6.0 (arm64), 11 cores",
+      "date": "2026-11-16",
+      "python": "3.9.6",
+      "node": "v23.10.0",
+      "hyperframes": "0.9.26",
+      "quality": "draft",
+      "result": "all passed",
+      "rows": [
+        {
+          "template": "starter",
+          "format": "16:9",
+          "ok": true,
+          "failed_steps": [],
+          "qa": "-14.1 LUFS (target -14.0 ±1); -1.5 dBTP in the encoded file (max -1)"
+        },
+        {
+          "template": "starter",
+          "format": "9:16",
+          "ok": true,
+          "failed_steps": [],
+          "qa": "-14.1 LUFS (target -14.0 ±1); -1.5 dBTP in the encoded file (max -1)"
+        },
+        {
+          "template": "three-starter",
+          "format": "16:9",
+          "ok": true,
+          "failed_steps": [],
+          "qa": "-14.1 LUFS (target -14.0 ±1); -1.5 dBTP in the encoded file (max -1)"
+        },
+        {
+          "template": "three-starter",
+          "format": "9:16",
+          "ok": true,
+          "failed_steps": [],
+          "qa": "-14.1 LUFS (target -14.0 ±1); -1.5 dBTP in the encoded file (max -1)"
+        },
+        {
+          "template": "isometric-kinetic",
+          "format": "16:9",
+          "ok": true,
+          "failed_steps": [],
+          "qa": "-14.2 LUFS (target -14.0 ±1); -1.4 dBTP in the encoded file (max -1)"
+        },
+        {
+          "template": "isometric-kinetic",
+          "format": "9:16",
+          "ok": true,
+          "failed_steps": [],
+          "qa": "-14.2 LUFS (target -14.0 ±1); -1.4 dBTP in the encoded file (max -1)"
+        },
+        {
+          "template": "tools",
+          "format": "default 3D, fonts, reference",
+          "ok": true,
+          "failed_steps": [],
+          "qa": ""
+        },
+        {
+          "template": "three-starter",
+          "format": "resume test",
+          "ok": true,
+          "failed_steps": [],
+          "qa": "12 s, all frames"
+        }
+      ],
+      "resume_after_budget_stop": "tested, works"
     }
   ],
   "manual": {
@@ -143,7 +211,6 @@
     "trigger prompts (tests/triggers.md)": "not run since 0.1.0-beta (20/20 then)"
   },
   "not_tested": [
-    "macOS: nothing has run there",
     "The acceptance prompts and the trigger prompts (see manual): the skill's behaviour in a real chat, including the new 3D default, is unproven",
     "A real project made with the new 3D starter from brief to MP4: only the template with placeholder text was rendered",
     "The Optimizely project from the first outside test run: not available, so its card-border complaint was fixed by rule and template, not re-checked on that film",
