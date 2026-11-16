@@ -42,6 +42,18 @@ It also reports the host's limits, so you can plan around them:
 - macOS: `brew install ffmpeg`
 - Linux: `sudo apt install ffmpeg` (or the distro equivalent)
 
+**macOS notes** (first tested on a Mac in 0.3.1-beta)
+- **Python:** the `python3` that comes with the Xcode tools (`/usr/bin/python3`) is often 3.9, and the scripts need 3.10+. Preflight prints the version and the interpreter it ran with. Use Homebrew's Python in a virtual environment:
+  ```
+  brew install python@3.12
+  /opt/homebrew/bin/python3.12 -m venv ~/.venvs/motion-studio
+  source ~/.venvs/motion-studio/bin/activate
+  python -m pip install -r "<skill>/scripts/requirements.txt"
+  ```
+  Activate it before starting Claude Code, so `python` points to it. Without a venv macOS has only `python3`: use that name for every script.
+- `pip install` that prints "Defaulting to user installation because normal site-packages is not writeable" is fine: it installed into the user folder. Homebrew's Python refuses `pip install` outside a venv ("externally-managed-environment"); use the venv above.
+- **FFmpeg without `drawtext`:** some FFmpeg builds (seen on macOS) have no `drawtext` filter; preflight shows it as an optional item. Only `analyze_ref.py`'s time labels need it: without it the sheets are made unlabelled and the script prints how to read times from the tile order. For labels, use an FFmpeg build with freetype and check with `ffmpeg -hide_banner -filters | grep drawtext`.
+
 **Python packages** (only those preflight reports missing):
 ```
 python -m pip install -r "<skill>/scripts/requirements.txt"

@@ -242,10 +242,22 @@ def main():
     for tool in ("ffmpeg", "ffprobe"):
         path, ver = version_of(tool, ("-version",))
         add(tool, bool(path), (ver or "not found")[:80], fix="Install FFmpeg (see references/setup.md)")
+    # drawtext writes the time on each tile of analyze_ref.py's sheets. Some builds (seen on macOS) lack it.
+    if which("ffmpeg"):
+        try:
+            filters = subprocess.run([which("ffmpeg"), "-hide_banner", "-nostdin", "-filters"], capture_output=True,
+                                     text=True, encoding="utf-8", errors="replace", timeout=20).stdout
+        except (OSError, subprocess.SubprocessError):
+            filters = ""
+        has_dt = re.search(r"^\s*\S+\s+drawtext\s", filters, re.M) is not None
+        add("FFmpeg drawtext (optional, time labels on reference sheets)", has_dt,
+            "available" if has_dt else "missing: this FFmpeg was built without freetype", required=False,
+            fix="Fine to skip: analyze_ref.py then makes sheets without time labels (references/setup.md, macOS notes)")
 
     # Python
     pv = sys.version_info
-    add("Python >= 3.10", pv >= (3, 10), platform.python_version(), fix="Install Python 3.10+")
+    add("Python >= 3.10", pv >= (3, 10), f"{platform.python_version()} ({sys.executable})",
+        fix="Install Python 3.10+ (macOS: references/setup.md, macOS notes)")
     add("numpy", importlib.util.find_spec("numpy") is not None,
         "installed" if importlib.util.find_spec("numpy") else "missing",
         fix="python -m pip install -r scripts/requirements.txt")

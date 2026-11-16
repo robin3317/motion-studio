@@ -46,7 +46,8 @@ SFX = os.path.join(SKILL, "assets", "audio", "sfx", "procedural")
 def one_line(text, limit=220):
     """The last meaningful line of a command's output, safe to put in a table cell."""
     lines = [ln.strip() for ln in (text or "").splitlines() if ln.strip()]
-    pick = next((ln for ln in reversed(lines) if ln.startswith(("RENDER_", "AUDIT_", "SHEET_", "ERROR", "Traceback"))),
+    pick = next((ln for ln in reversed(lines) if ln.startswith(("RENDER_", "AUDIT_", "SHEET_", "ANALYSIS_", "FONT_",
+                                                                  "ERROR", "Traceback"))),
                 lines[-1] if lines else "")
     return pick.replace("|", "/")[:limit]
 
@@ -92,9 +93,12 @@ def one(template, fmt, work, a, env):
     py = sys.executable
     t0 = time.time()
 
-    def step(key, ok, detail=""):
+    def step(key, ok, detail="", log=""):
         row["steps"][key] = {"ok": bool(ok), "detail": detail}
         print(f"    {'ok  ' if ok else 'FAIL'} {key}: {detail}", flush=True)
+        if not ok and log:                 # show the script's own last lines, so a FAIL says why
+            for ln in [ln for ln in log.strip().splitlines() if ln.strip()][-8:]:
+                print(f"      | {ln[:200]}", flush=True)
         return ok
 
     code, out = sh([py, os.path.join(SCRIPTS, "new_project.py"), "--name", name, "--format", fmt, "--duration", str(dur),
@@ -200,9 +204,12 @@ def tools_test(work, a, env, rows):
     py = sys.executable
     t0 = time.time()
 
-    def step(key, ok, detail=""):
+    def step(key, ok, detail="", log=""):
         row["steps"][key] = {"ok": bool(ok), "detail": detail}
         print(f"    {'ok  ' if ok else 'FAIL'} {key}: {detail}", flush=True)
+        if not ok and log:                 # show the script's own last lines, so a FAIL says why
+            for ln in [ln for ln in log.strip().splitlines() if ln.strip()][-8:]:
+                print(f"      | {ln[:200]}", flush=True)
         return ok
 
     code, out = sh([py, os.path.join(SCRIPTS, "new_project.py"), "--name", "tools-test", "--format", "4:5",
@@ -235,7 +242,7 @@ def tools_test(work, a, env, rows):
     step("font fetch", code == 0 and "FONT_DONE" in out and credited
          and os.path.isfile(os.path.join(font_dir, "jetbrains-mono-latin-500-normal.woff2"))
          and os.path.isfile(os.path.join(font_dir, "LICENSE")),
-         "woff2 + licence + credits entry" if code == 0 else one_line(out))
+         "woff2 + licence + credits entry" if code == 0 else one_line(out), log=out)
 
     names = [f"{r['template']}-{r['format'].replace(':', 'x')}" for r in rows if r.get("steps", {}).get("render", {}).get("ok")]
     mp4 = os.path.join(work, names[0], "renders", f"{names[0]}-v1.mp4") if names else None
@@ -247,7 +254,7 @@ def tools_test(work, a, env, rows):
     done = re.search(r"ANALYSIS_DONE (.*?) \| (.*)", out)
     folder = done.group(2).strip() if done else ""
     step("reference analysis", code == 0 and done and os.path.isfile(os.path.join(folder, "recipe.md"))
-         and any(f.startswith("hook-") for f in os.listdir(folder)), done.group(1) if done else one_line(out))
+         and any(f.startswith("hook-") for f in os.listdir(folder)), done.group(1) if done else one_line(out), log=out)
     row["seconds"] = round(time.time() - t0)
     row["ok"] = all(v["ok"] for v in row["steps"].values())
     return row

@@ -44,9 +44,25 @@ def ffmpeg(args, timeout=600):
                           capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout)
 
 
+_FILTERS = None
+
+
+def has_filter(name):
+    """True if this FFmpeg build has the filter. Some builds (seen on macOS) ship without libfreetype,
+    so `drawtext` is missing and any filter graph that uses it fails."""
+    global _FILTERS
+    if _FILTERS is None:
+        p = subprocess.run([need("ffmpeg"), "-hide_banner", "-nostdin", "-filters"], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace", timeout=60)
+        _FILTERS = set(re.findall(r"^\s*\S+\s+(\w+)\s", p.stdout, re.M))
+    return name in _FILTERS
+
+
 def stamp(wide):
-    """Scale to a tile and write the frame's own time in its corner."""
+    """Scale to a tile and write the frame's own time in its corner (when FFmpeg has drawtext)."""
     scale = "scale=320:-2" if wide else "scale=-2:320"
+    if not has_filter("drawtext"):
+        return scale            # unlabelled tiles; the tile order still gives the time (see the note printed)
     return (scale + ",drawbox=x=0:y=0:w=96:h=22:color=black@0.65:t=fill,"
             "drawtext=" + font_arg() + "text='%{pts\\:hms}':x=4:y=4:fontsize=14:fontcolor=white")
 
@@ -149,6 +165,10 @@ def main():
     print(f"[ref] {os.path.basename(video)}: {duration:.1f} s, {w}x{h}, {fps:g} fps, audio {'yes' if has_audio else 'NO'}", flush=True)
     hook_len = min(a.hook, duration)
     hook_frames = int(round(hook_len * fps))
+    if not has_filter("drawtext"):
+        print(f"[ref] note: this FFmpeg has no drawtext filter (built without libfreetype), so tiles carry no time label. "
+              f"Read times from the order instead: hook tile k = k/{fps:g} s; overview tile k = window start + k/2 s. "
+              "For labels, install an FFmpeg build with freetype (references/setup.md).", flush=True)
     hook_files = sheets(video, out, "hook", 0, hook_len, None, wide, math.ceil(hook_frames / SHEET_FRAMES))
     print(f"[ref] hook: {hook_frames} frames on {len(hook_files)} sheet(s)", flush=True)
 
@@ -218,6 +238,8 @@ def main():
     with open(os.path.join(out, "recipe.md"), "w", encoding="utf-8") as f:
         f.write("\n".join(L))
 
+    if not hook_files and not over:   # never report success without the sheets the analysis is for
+        sys.exit("ANALYSIS_FAILED FFmpeg wrote no contact sheets (see 'sheet failed' above); run scripts/preflight.py")
     print(f"ANALYSIS_DONE {len(shots)} shots, {len(hook_files)} hook sheet(s), {len(over)} overview sheet(s) | {out}")
     for fn in ["recipe.md"] + hook_files[:2] + over[:2]:
         print("  look at: " + os.path.join(out, fn))

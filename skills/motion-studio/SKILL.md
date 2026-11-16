@@ -41,7 +41,7 @@ Run `python scripts/update_check.py` from this skill's folder. It takes a few se
 
 ## Step 0: Environment check
 
-Run `python scripts/preflight.py` from the skill folder, with the video project folder as the working directory. It is read-only and reports Node, FFmpeg, Python packages, HyperFrames CLI and HyperFrames skills.
+Run `python scripts/preflight.py` from the skill folder, with the video project folder as the working directory. Where `python` isn't found (macOS, many Linux systems), use `python3` for every script. It is read-only and reports Node, FFmpeg, Python packages, HyperFrames CLI and HyperFrames skills.
 - All green → continue.
 - Anything missing → read `references/setup.md` and offer the guided install. Don't start production until the render path works.
 - Read the **HOST** lines and the `reach:` lines too. They say what this machine can't do (few CPU cores, no GPU, blocked sites), so you can plan around it before you start: lighter 3D, site capture on the user's machine, an installed Chrome for rendering.
