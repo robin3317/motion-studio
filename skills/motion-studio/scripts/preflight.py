@@ -256,8 +256,8 @@ def main():
 
     # Python
     pv = sys.version_info
-    add("Python >= 3.10", pv >= (3, 10), f"{platform.python_version()} ({sys.executable})",
-        fix="Install Python 3.10+ (macOS: references/setup.md, macOS notes)")
+    add("Python >= 3.9", pv >= (3, 9), f"{platform.python_version()} ({sys.executable})",
+        fix="Install Python 3.9+ (macOS: references/setup.md, macOS notes)")
     add("numpy", importlib.util.find_spec("numpy") is not None,
         "installed" if importlib.util.find_spec("numpy") else "missing",
         fix="python -m pip install -r scripts/requirements.txt")

@@ -5,7 +5,9 @@ First test run on a Mac: every template, the checks, renders and stop + resume p
 - **Fix: reference analysis on FFmpeg builds without `drawtext`** (seen on macOS). `analyze_ref.py` wrote no contact sheets and still reported `ANALYSIS_DONE`. It now checks the build, makes the sheets without time labels when `drawtext` is missing and says how to read the times from the tile order; if no sheet is written at all it exits with `ANALYSIS_FAILED` and the reason
 - **Preflight** reports `drawtext` as an optional item and prints which Python it ran with
 - **Regression:** a failing tools step now prints the script's own last lines, so the report says why
-- **macOS notes in `setup.md`:** Python 3.10+ in a venv (the Xcode `python3` is often 3.9), the harmless "Defaulting to user installation" message, Homebrew's "externally-managed-environment", and FFmpeg without `drawtext`. SKILL.md: use `python3` where `python` isn't found
+- **Python 3.9+ (was 3.10+).** The full regression passes on macOS with the Xcode `python3` (3.9.6), and the scripts use no 3.10-only syntax. Preflight, setup.md, SKILL.md and the README now say 3.9+
+- **macOS notes in `setup.md`:** the Xcode `python3` is enough (Homebrew's Python goes in a venv), the harmless "Defaulting to user installation" message, Homebrew's "externally-managed-environment", and FFmpeg without `drawtext`. SKILL.md: use `python3` where `python` isn't found
+- **Tested on all three systems:** the regression passes on Linux (cloud sandbox), Windows 11 and macOS (arm64), recorded in `tests/RELEASE_CHECKS.json`
 
 ## 0.3.0-beta (2026-11-11): 3D by default, cleaner components, tools for checking work
 Steps two and three of the plan from the first outside test run: first see and measure quality, then raise it.

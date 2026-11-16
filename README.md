@@ -45,7 +45,7 @@ Each style comes with its own typography, motion, transition, music and SFX rule
 ## Requirements
 
 - **Claude Code** or the **Claude desktop app (Cowork)**. It needs terminal and file access, so rendering doesn't run in plain chat.
-- **Node.js 22+**, **FFmpeg**, **Python 3.10+** (with `numpy`)
+- **Node.js 22+**, **FFmpeg**, **Python 3.9+** (with `numpy`)
 - The official **HyperFrames skills** (`/hyperframes`, `/hyperframes-cli`, `/media-use`)
 
 You don't need to check these yourself. The skill runs a read-only check first and offers to install what's missing (with your approval).

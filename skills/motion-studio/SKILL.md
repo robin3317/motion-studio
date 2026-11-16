@@ -2,7 +2,7 @@
 name: motion-studio
 description: Directs complete motion-graphics videos rendered with HyperFrames - company, product, brand and release promos (teaser, announcement, countdown, launch day), footage edits with captions and overlays, plus custom motion pieces - with Three.js 3D, licensed background music, sound effects and optional voiceover. Runs in Autopilot (brief to MP4) or Step-by-step mode with approval gates. Use when the user asks to make a promo video, product ad, brand video, launch teaser, company intro, animated video, motion graphics, or to edit a recorded video, from a brief, website, product images or footage. Not for general video questions or AI text-to-video generation.
 license: MIT
-compatibility: Needs Claude Code or the Claude desktop app (Cowork) with terminal and file access, Node.js 22+, FFmpeg, Python 3.10+ and the official HyperFrames skills.
+compatibility: Needs Claude Code or the Claude desktop app (Cowork) with terminal and file access, Node.js 22+, FFmpeg, Python 3.9+ and the official HyperFrames skills.
 metadata:
   author: robin3317
   version: 0.3.0-beta

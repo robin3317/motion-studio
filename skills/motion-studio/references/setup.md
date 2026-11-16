@@ -21,7 +21,7 @@ It also reports the host's limits, so you can plan around them:
 |---|---|---|
 | Node.js **22+** | HyperFrames CLI, site capture | Yes |
 | FFmpeg + ffprobe | Rendering, audio mixing, QA | Yes |
-| Python **3.10+** | Helper scripts (audio, SFX, QA) | Yes |
+| Python **3.9+** | Helper scripts (audio, SFX, QA) | Yes |
 | HyperFrames skills (`/hyperframes`, `/hyperframes-cli`, `/media-use`) | Composition authoring, preview, render | Yes |
 | Playwright Chromium | Website screenshots | For company/product promos from a website |
 | `rembg` (Python) | Product background removal | Optional |
@@ -43,7 +43,7 @@ It also reports the host's limits, so you can plan around them:
 - Linux: `sudo apt install ffmpeg` (or the distro equivalent)
 
 **macOS notes** (first tested on a Mac in 0.3.1-beta)
-- **Python:** the `python3` that comes with the Xcode tools (`/usr/bin/python3`) is often 3.9, and the scripts need 3.10+. Preflight prints the version and the interpreter it ran with. Use Homebrew's Python in a virtual environment:
+- **Python:** the `python3` that comes with the Xcode tools (`/usr/bin/python3`, 3.9) is enough: the full regression passes on it. Preflight prints the version and the interpreter it ran with. If you'd rather use Homebrew's Python, put it in a virtual environment:
   ```
   brew install python@3.12
   /opt/homebrew/bin/python3.12 -m venv ~/.venvs/motion-studio
