@@ -84,7 +84,7 @@ npx skills add robin3317/motion-studio
 ```
 
 **Claude desktop / Cowork (ZIP upload)**
-1. Download `motion-studio-skill-v0.3.0-beta.zip` (the newest version) from [Releases](https://github.com/robin3317/motion-studio/releases).
+1. Download `motion-studio-skill-v0.3.1-beta.zip` (the newest version) from [Releases](https://github.com/robin3317/motion-studio/releases).
 2. In Claude, open **Settings → Capabilities → Skills**, click **Upload skill**, and choose the ZIP.
 
 **Manual**

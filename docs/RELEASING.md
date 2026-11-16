@@ -57,6 +57,18 @@ git push origin v0.3.0-beta
 gh release create v0.3.0-beta dist\motion-studio-skill-v0.3.0-beta.zip dist\motion-studio-plugin-v0.3.0-beta.zip --prerelease --title "motion-studio v0.3.0-beta" --notes-file dist\release-notes-v0.3.0-beta.md
 ```
 
+### Example: v0.3.1-beta
+The regression ran on all three systems: Windows here, macOS on a borrowed Mac (its `RELEASE_CHECKS.json` entry copied into this repo; no commits on that Mac) and Linux in a Claude cloud session.
+```powershell
+python tests\build_release.py
+git add -A
+git commit -m "motion-studio v0.3.1-beta"
+git push origin main
+git tag v0.3.1-beta
+git push origin v0.3.1-beta
+gh release create v0.3.1-beta dist\motion-studio-skill-v0.3.1-beta.zip dist\motion-studio-plugin-v0.3.1-beta.zip --prerelease --title "motion-studio v0.3.1-beta" --notes-file dist\release-notes-v0.3.1-beta.md
+```
+
 ## How users get notified
 `skills/motion-studio/scripts/update_check.py` compares the installed `metadata.version` in SKILL.md with the newest version it can find. It tries two sources, in order:
 1. The GitHub **Releases** API of robin3317/motion-studio (pre-releases included).

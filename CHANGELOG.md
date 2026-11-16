@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (planned as 0.3.1-beta): macOS
+## 0.3.1-beta (2026-11-16): macOS
 First test run on a Mac: every template, the checks, renders and stop + resume pass. One fix and a few helpers came out of it.
 - **Fix: reference analysis on FFmpeg builds without `drawtext`** (seen on macOS). `analyze_ref.py` wrote no contact sheets and still reported `ANALYSIS_DONE`. It now checks the build, makes the sheets without time labels when `drawtext` is missing and says how to read the times from the tile order; if no sheet is written at all it exits with `ANALYSIS_FAILED` and the reason
 - **Preflight** reports `drawtext` as an optional item and prints which Python it ran with
